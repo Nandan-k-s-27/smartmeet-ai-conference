@@ -1,6 +1,7 @@
 # 🎥 SmartMeet - AI-Powered Conference App
 
 AI-powered video conferencing platform with real-time meeting summaries, transcription, and smart features. Built with WebRTC, React, Node.js, Socket.IO, and Google Gemini AI. Features include HD video calls, screen sharing, real-time chat, face detection, missed conversation tracking, and automated meeting summaries.
+## 🚀Live Link: https://smartmeet-zeta.vercel.app
 
 ## ✨ Features
 
