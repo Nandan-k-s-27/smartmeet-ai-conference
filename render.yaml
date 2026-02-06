@@ -1,0 +1,25 @@
+# Render Blueprint for SmartMeet Backend
+# This file enables one-click deployment to Render.com
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend Web Service
+  - type: web
+    name: smartmeet-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false  # User must provide this
+      - key: GEMINI_API_KEY
+        sync: false  # User must provide this
+      - key: ALLOWED_ORIGINS
+        sync: false  # User must provide this (e.g., https://your-frontend.vercel.app)
+    autoDeploy: true

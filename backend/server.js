@@ -100,11 +100,26 @@ app.get('/api/summary/meeting-data/:meetingId', summaryController.getMeetingData
 
 // Health Check endpoint
 app.get('/', (req, res) => {
-  res.json({ status: 'ok', service: 'SmartMeet API' });
+  res.json({ 
+    status: 'ok', 
+    service: 'SmartMeet API',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  const health = {
+    status: mongoose.connection.readyState === 1 ? 'healthy' : 'unhealthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    mongodb: mongoStatus,
+    environment: process.env.NODE_ENV || 'development'
+  };
+  
+  const statusCode = mongoose.connection.readyState === 1 ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
 const PORT = process.env.PORT || 5000;
