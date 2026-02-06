@@ -106,6 +106,19 @@ body.dark-mode input {
 
 body.dark-mode input:focus {
   border-color: #4facfe;
+  background: #1e1e2e;
+  box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.15);
+  color: #ffffff;
+}
+
+body.dark-mode input::placeholder {
+  color: #6b7280;
+}
+
+body.dark-mode .form-group label {
+  background: linear-gradient(135deg, #60a5fa 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 /* Light Mode Styles */
@@ -445,6 +458,140 @@ code {
   min-height: 100vh;
   padding: 20px;
   animation: fadeIn 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ==================== STARFIELD ANIMATION ==================== */
+.starfield {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.stars-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+/* Small stars - many, faint, slow drift */
+.stars-small {
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.7) 50%, transparent 100%),
+    radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 40% 8%, rgba(255,255,255,0.6) 50%, transparent 100%),
+    radial-gradient(1px 1px at 55% 45%, rgba(255,255,255,0.4) 50%, transparent 100%),
+    radial-gradient(1px 1px at 70% 22%, rgba(255,255,255,0.7) 50%, transparent 100%),
+    radial-gradient(1px 1px at 85% 55%, rgba(255,255,255,0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 15% 65%, rgba(255,255,255,0.6) 50%, transparent 100%),
+    radial-gradient(1px 1px at 35% 78%, rgba(255,255,255,0.4) 50%, transparent 100%),
+    radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 80% 85%, rgba(255,255,255,0.6) 50%, transparent 100%),
+    radial-gradient(1px 1px at 95% 40%, rgba(255,255,255,0.4) 50%, transparent 100%),
+    radial-gradient(1px 1px at 5% 90%, rgba(255,255,255,0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 48% 92%, rgba(255,255,255,0.3) 50%, transparent 100%),
+    radial-gradient(1px 1px at 72% 58%, rgba(255,255,255,0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  animation: starDrift 80s linear infinite;
+}
+
+/* Medium stars - moderate count, brighter, moderate drift */
+.stars-medium {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 25%, rgba(255,255,255,0.8) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 12%, rgba(255,255,255,0.6) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 65% 38%, rgba(255,255,255,0.7) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 82% 62%, rgba(255,255,255,0.5) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 12% 80%, rgba(255,255,255,0.6) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 38% 55%, rgba(255,255,255,0.7) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 55% 82%, rgba(255,255,255,0.5) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 90% 18%, rgba(255,255,255,0.6) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 75% 75%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  animation: starDrift 120s linear infinite reverse;
+}
+
+/* Large stars - few, bright, twinkling */
+.stars-large {
+  background-image:
+    radial-gradient(2.5px 2.5px at 18% 30%, rgba(79,172,254,0.9) 50%, transparent 100%),
+    radial-gradient(2px 2px at 50% 20%, rgba(255,255,255,0.85) 50%, transparent 100%),
+    radial-gradient(2.5px 2.5px at 78% 45%, rgba(0,242,254,0.8) 50%, transparent 100%),
+    radial-gradient(2px 2px at 35% 70%, rgba(255,255,255,0.7) 50%, transparent 100%),
+    radial-gradient(2.5px 2.5px at 88% 80%, rgba(79,172,254,0.75) 50%, transparent 100%),
+    radial-gradient(2px 2px at 8% 55%, rgba(0,242,254,0.7) 50%, transparent 100%);
+  animation: starDrift 60s linear infinite, starTwinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes starDrift {
+  from { transform: translateY(0) translateX(0); }
+  to { transform: translateY(-30px) translateX(15px); }
+}
+
+@keyframes starTwinkle {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+/* Light mode: darker particles for visibility on light backgrounds */
+body.light-mode .stars-small {
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(79,172,254,0.35) 50%, transparent 100%),
+    radial-gradient(1px 1px at 25% 35%, rgba(100,100,180,0.25) 50%, transparent 100%),
+    radial-gradient(1px 1px at 40% 8%, rgba(79,172,254,0.3) 50%, transparent 100%),
+    radial-gradient(1px 1px at 55% 45%, rgba(100,100,180,0.2) 50%, transparent 100%),
+    radial-gradient(1px 1px at 70% 22%, rgba(79,172,254,0.35) 50%, transparent 100%),
+    radial-gradient(1px 1px at 85% 55%, rgba(100,100,180,0.25) 50%, transparent 100%),
+    radial-gradient(1px 1px at 15% 65%, rgba(79,172,254,0.3) 50%, transparent 100%),
+    radial-gradient(1px 1px at 35% 78%, rgba(100,100,180,0.2) 50%, transparent 100%),
+    radial-gradient(1px 1px at 60% 70%, rgba(79,172,254,0.25) 50%, transparent 100%),
+    radial-gradient(1px 1px at 80% 85%, rgba(100,100,180,0.3) 50%, transparent 100%),
+    radial-gradient(1px 1px at 95% 40%, rgba(79,172,254,0.2) 50%, transparent 100%),
+    radial-gradient(1px 1px at 5% 90%, rgba(100,100,180,0.25) 50%, transparent 100%),
+    radial-gradient(1px 1px at 48% 92%, rgba(79,172,254,0.15) 50%, transparent 100%),
+    radial-gradient(1px 1px at 72% 58%, rgba(100,100,180,0.25) 50%, transparent 100%),
+    radial-gradient(1px 1px at 30% 50%, rgba(79,172,254,0.2) 50%, transparent 100%);
+}
+
+body.light-mode .stars-medium {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 25%, rgba(79,172,254,0.4) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 12%, rgba(100,100,180,0.3) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 65% 38%, rgba(79,172,254,0.35) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 82% 62%, rgba(100,100,180,0.25) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 12% 80%, rgba(79,172,254,0.3) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 38% 55%, rgba(100,100,180,0.35) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 55% 82%, rgba(79,172,254,0.25) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 90% 18%, rgba(100,100,180,0.3) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 75% 75%, rgba(79,172,254,0.2) 50%, transparent 100%);
+}
+
+body.light-mode .stars-large {
+  background-image:
+    radial-gradient(2.5px 2.5px at 18% 30%, rgba(79,172,254,0.55) 50%, transparent 100%),
+    radial-gradient(2px 2px at 50% 20%, rgba(100,100,180,0.5) 50%, transparent 100%),
+    radial-gradient(2.5px 2.5px at 78% 45%, rgba(0,180,220,0.45) 50%, transparent 100%),
+    radial-gradient(2px 2px at 35% 70%, rgba(100,100,180,0.4) 50%, transparent 100%),
+    radial-gradient(2.5px 2.5px at 88% 80%, rgba(79,172,254,0.5) 50%, transparent 100%),
+    radial-gradient(2px 2px at 8% 55%, rgba(0,180,220,0.4) 50%, transparent 100%);
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .stars-small,
+  .stars-medium,
+  .stars-large {
+    animation: none !important;
+  }
 }
 
 @keyframes fadeIn {
@@ -459,6 +606,8 @@ code {
 }
 
 .lobby-card {
+  position: relative;
+  z-index: 1;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -3532,8 +3681,9 @@ body.light-mode .presence-toast-close:hover {
   outline: none;
   border-color: #4facfe;
   box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.12);
-  background: white;
+  background: #ffffff;
   transform: translateY(-1px);
+  color: #1a202c;
 }
 
 .form-group input::placeholder {

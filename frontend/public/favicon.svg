@@ -1,50 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a1a3e;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#2d3561;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="icon-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#4facfe;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="camera-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#0d0d0d;stop-opacity:1"/>
     </linearGradient>
   </defs>
   
   <!-- Background rounded square -->
-  <rect width="512" height="512" rx="110" fill="url(#bg-gradient)"/>
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
   
-  <!-- Chat bubble (larger) -->
-  <path d="M 140 180 Q 140 140 180 140 L 380 140 Q 420 140 420 180 L 420 310 Q 420 350 380 350 L 260 350 L 200 400 L 200 350 L 180 350 Q 140 350 140 310 Z" 
-        fill="url(#icon-gradient)" 
-        opacity="0.9"/>
+  <!-- Chat bubble outline -->
+  <path d="M 120 155 Q 120 115 165 115 L 365 115 Q 410 115 410 155 L 410 295 Q 410 335 365 335 L 240 335 L 175 395 L 175 335 L 165 335 Q 120 335 120 295 Z" 
+        fill="none" stroke="white" stroke-width="28" stroke-linejoin="round"/>
   
-  <!-- Network nodes inside bubble -->
-  <circle cx="220" cy="220" r="18" fill="#ffd700" opacity="0.95"/>
-  <circle cx="300" cy="200" r="16" fill="#fff" opacity="0.9"/>
-  <circle cx="360" cy="250" r="14" fill="#a78bfa" opacity="0.9"/>
-  <circle cx="280" cy="280" r="20" fill="#f59e0b" opacity="0.95"/>
-  <circle cx="200" cy="270" r="14" fill="#60a5fa" opacity="0.9"/>
+  <!-- Chat bubble inner fill -->
+  <path d="M 145 165 Q 145 140 170 140 L 360 140 Q 385 140 385 165 L 385 285 Q 385 310 360 310 L 235 310 L 185 355 L 185 310 L 170 310 Q 145 310 145 285 Z" 
+        fill="#1a1a1a"/>
+  
+  <!-- Network nodes -->
+  <circle cx="210" cy="200" r="16" fill="white"/>
+  <circle cx="295" cy="185" r="14" fill="white"/>
+  <circle cx="350" cy="235" r="12" fill="white"/>
+  <circle cx="270" cy="265" r="17" fill="white"/>
+  <circle cx="190" cy="255" r="12" fill="white"/>
   
   <!-- Connection lines -->
-  <line x1="220" y1="220" x2="300" y2="200" stroke="#fff" stroke-width="4" opacity="0.6"/>
-  <line x1="300" y1="200" x2="360" y2="250" stroke="#fff" stroke-width="4" opacity="0.6"/>
-  <line x1="280" y1="280" x2="360" y2="250" stroke="#fff" stroke-width="4" opacity="0.6"/>
-  <line x1="220" y1="220" x2="280" y2="280" stroke="#fff" stroke-width="4" opacity="0.6"/>
-  <line x1="200" y1="270" x2="280" y2="280" stroke="#fff" stroke-width="4" opacity="0.6"/>
-  <line x1="200" y1="270" x2="220" y2="220" stroke="#fff" stroke-width="4" opacity="0.6"/>
+  <line x1="210" y1="200" x2="295" y2="185" stroke="white" stroke-width="4" opacity="0.7"/>
+  <line x1="295" y1="185" x2="350" y2="235" stroke="white" stroke-width="4" opacity="0.7"/>
+  <line x1="270" y1="265" x2="350" y2="235" stroke="white" stroke-width="4" opacity="0.7"/>
+  <line x1="210" y1="200" x2="270" y2="265" stroke="white" stroke-width="4" opacity="0.7"/>
+  <line x1="190" y1="255" x2="270" y2="265" stroke="white" stroke-width="4" opacity="0.7"/>
+  <line x1="190" y1="255" x2="210" y2="200" stroke="white" stroke-width="4" opacity="0.7"/>
   
-  <!-- Sparkle/star effect -->
-  <circle cx="380" cy="160" r="3" fill="#ffd700"/>
-  <path d="M 390 165 L 396 167 L 394 173 L 398 177 L 392 179 L 390 185 L 388 179 L 382 177 L 386 173 L 384 167 Z" 
-        fill="#ffd700" opacity="0.95"/>
+  <!-- AI sparkle star -->
+  <path d="M 365 145 L 371 160 L 386 163 L 374 173 L 377 188 L 365 180 L 353 188 L 356 173 L 344 163 L 359 160 Z" 
+        fill="white" opacity="0.95"/>
   
-  <!-- Camera icon (video camera shape) -->
-  <rect x="440" y="320" width="50" height="38" rx="6" fill="url(#camera-gradient)" opacity="0.95"/>
-  <path d="M 490 332 L 520 320 L 520 368 L 490 356 Z" fill="url(#camera-gradient)" opacity="0.95"/>
-  <circle cx="465" cy="339" r="8" fill="#1a1a3e" opacity="0.5"/>
+  <!-- Video camera body -->
+  <rect x="330" y="310" width="65" height="48" rx="10" fill="white"/>
+  <!-- Camera lens -->
+  <path d="M 395 320 L 430 305 L 430 370 L 395 355 Z" fill="white"/>
 </svg>

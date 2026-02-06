@@ -435,6 +435,12 @@ function App() {
     return (
       <div className="app-container">
         <div className="lobby-container">
+          {/* Starfield animation background */}
+          <div className="starfield" aria-hidden="true">
+            <div className="stars-layer stars-small"></div>
+            <div className="stars-layer stars-medium"></div>
+            <div className="stars-layer stars-large"></div>
+          </div>
           <div className="lobby-card">
             <div className="lobby-header">
               <i className="fas fa-video"></i>
