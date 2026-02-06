@@ -2209,9 +2209,21 @@ body.dark-mode .backend-error-panel .help-text {
     font-size: 3rem;
   }
   
+  .lobby-actions {
+    width: 100%;
+    padding: 0 5px;
+  }
+  
   .btn-primary, .btn-secondary {
-    padding: 14px 20px;
-    font-size: 1rem;
+    padding: 16px 24px;
+    font-size: 1.05rem;
+    width: 100%;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .btn-primary i, .btn-secondary i {
+    font-size: 1.1rem;
   }
   
   .video-grid {
