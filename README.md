@@ -54,7 +54,6 @@ smartmeet-ai-conference/
 │   │       ├── useFaceDetection.js  # ML-based presence
 │   │       └── usePageVisibility.js # Tab visibility API
 │   ├── package.json
-│   ├── vercel.json          # Vercel deployment config
 │   └── .env.example
 │
 ├── backend/                   # Node.js + Express backend
@@ -74,11 +73,8 @@ smartmeet-ai-conference/
 │   ├── utils/
 │   │   └── meetingStore.js  # In-memory meeting state
 │   ├── package.json
-│   ├── vercel.json          # Vercel deployment config
-│   ├── railway.toml         # Railway deployment config
 │   └── .env.example
 │
-├── vercel.json              # Root Vercel configuration
 ├── .gitignore
 └── README.md
 ```
@@ -100,12 +96,6 @@ smartmeet-ai-conference/
 - **Mongoose** - MongoDB ODM
 - **Google Gemini AI** - AI-powered summaries and transcription analysis
 - **dotenv** - Environment configuration
-
-### DevOps & Deployment
-- **Vercel** - Frontend hosting (recommended)
-- **Railway** - Backend hosting (recommended)
-- **MongoDB Atlas** - Cloud database
-- **Git** - Version control
 
 ## 🚀 Quick Start
 
@@ -298,171 +288,6 @@ video: {
 }
 ```
 
-## 🌐 Deployment
-
-### Deploy Backend to Railway
-
-Railway is recommended for backend deployment as it provides:
-- Easy MongoDB integration
-- WebSocket support
-- Free tier available
-- Simple environment variable management
-
-#### Steps:
-
-1. **Create Railway Account**: Go to [railway.app](https://railway.app)
-
-2. **Create New Project**:
-   ```bash
-   # Install Railway CLI (optional)
-   npm install -g @railway/cli
-   
-   # Login
-   railway login
-   ```
-
-3. **Deploy from GitHub**:
-   - Click "New Project" → "Deploy from GitHub repo"
-   - Select your repository
-   - Select `backend` as the root directory
-   - Railway will auto-detect Node.js
-
-4. **Set Environment Variables** in Railway Dashboard:
-   ```env
-   NODE_ENV=production
-   PORT=5000
-   MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/smartmeet
-   GEMINI_API_KEY=your_gemini_api_key
-   ALLOWED_ORIGINS=https://your-frontend-url.vercel.app
-   ```
-
-5. **Deploy**: Railway will automatically build and deploy
-
-6. **Get Backend URL**: Copy your Railway app URL (e.g., `https://smartmeet-backend.railway.app`)
-
-**Alternative: Manual Deployment**
-```bash
-cd backend
-railway init
-railway up
-```
-
----
-
-### Deploy Frontend to Vercel
-
-Vercel is recommended for frontend deployment as it provides:
-- Automatic React optimizations
-- Global CDN
-- Instant deployments
-- Free tier with custom domains
-
-#### Steps:
-
-1. **Create Vercel Account**: Go to [vercel.com](https://vercel.com)
-
-2. **Install Vercel CLI** (optional):
-   ```bash
-   npm install -g vercel
-   ```
-
-3. **Deploy from GitHub** (Recommended):
-   - Click "Add New" → "Project"
-   - Import your GitHub repository
-   - Configure project:
-     - **Framework Preset**: Create React App
-     - **Root Directory**: `frontend`
-     - **Build Command**: `npm run build`
-     - **Output Directory**: `build`
-
-4. **Set Environment Variables** in Vercel Dashboard:
-   ```env
-   REACT_APP_API_URL=https://your-backend.railway.app
-   ```
-
-5. **Deploy**: Vercel will automatically build and deploy
-
-6. **Update Backend CORS**: Add your Vercel URL to `ALLOWED_ORIGINS` in Railway
-
-**Alternative: CLI Deployment**
-```bash
-cd frontend
-vercel --prod
-```
-
----
-
-### MongoDB Setup (MongoDB Atlas)
-
-1. **Create Account**: Go to [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
-
-2. **Create Cluster**:
-   - Choose FREE tier (M0)
-   - Select cloud provider and region
-   - Create cluster
-
-3. **Database Access**:
-   - Create database user with password
-   - Note down username and password
-
-4. **Network Access**:
-   - Add IP address: `0.0.0.0/0` (allow from anywhere)
-   - Or add specific Railway/Vercel IPs
-
-5. **Get Connection String**:
-   - Click "Connect" → "Connect your application"
-   - Copy connection string
-   - Replace `<password>` with your password
-   - Replace `<dbname>` with `smartmeet`
-
-6. **Add to Railway**: Paste connection string in `MONGODB_URI` environment variable
-
----
-
-### Post-Deployment Checklist
-
-✅ **Backend (Railway)**:
-- [ ] Environment variables set
-- [ ] MongoDB connected successfully
-- [ ] Gemini API key configured
-- [ ] CORS configured with frontend URL
-- [ ] Health check endpoint working: `https://your-backend.railway.app/health`
-
-✅ **Frontend (Vercel)**:
-- [ ] Environment variable set with backend URL
-- [ ] Build successful
-- [ ] Can access the application
-- [ ] WebSocket connection working
-
-✅ **Testing**:
-- [ ] Create a meeting
-- [ ] Join meeting from different device/browser
-- [ ] Test video/audio
-- [ ] Test screen sharing
-- [ ] Test chat functionality
-- [ ] Test AI summary generation
-- [ ] Test face detection
-
----
-
-### Environment Variables Reference
-
-#### Backend (.env)
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `NODE_ENV` | Environment mode | Yes | `production` |
-| `PORT` | Server port | Yes | `5000` |
-| `MONGODB_URI` | MongoDB connection | Yes | `mongodb+srv://...` |
-| `GEMINI_API_KEY` | Google Gemini AI key | Yes | `AIzaSy...` |
-| `ALLOWED_ORIGINS` | CORS allowed origins | Yes | `https://app.vercel.app` |
-| `GEMINI_API2` | Backup API key | No | `AIzaSy...` |
-| `GEMINI_API3` | Backup API key | No | `AIzaSy...` |
-
-#### Frontend (.env)
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `REACT_APP_API_URL` | Backend API URL | Yes | `https://backend.railway.app` |
-
 ## 🔒 Security & Best Practices
 
 ### Production Security Checklist
@@ -569,18 +394,6 @@ For production, use a TURN server to handle NAT traversal:
 - ✅ Ensure both frontend and backend use same protocol (http/https)
 - ✅ Clear browser cache
 - ✅ Check backend CORS middleware configuration
-
-### Deployment Issues
-
-**Symptoms**: App works locally but not in production
-
-**Solutions**:
-- ✅ Verify all environment variables are set
-- ✅ Check build logs for errors
-- ✅ Ensure MongoDB is accessible from deployed location
-- ✅ Update CORS settings with production URLs
-- ✅ Use HTTPS for both frontend and backend
-- ✅ Check Railway/Vercel logs for errors
 
 ## 📝 API Documentation
 
@@ -788,8 +601,6 @@ SOFTWARE.
 - [Socket.IO Documentation](https://socket.io/docs/v4/)
 - [Google Gemini API](https://ai.google.dev/docs)
 - [MongoDB Atlas Guide](https://docs.atlas.mongodb.com/)
-- [Railway Documentation](https://docs.railway.app/)
-- [Vercel Documentation](https://vercel.com/docs)
 
 ---
 
