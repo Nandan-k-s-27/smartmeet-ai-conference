@@ -1,0 +1,43 @@
+{
+  "name": "smartmeet-frontend",
+  "version": "1.0.0",
+  "description": "AI-powered meeting application frontend",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "set DISABLE_ESLINT_PLUGIN=true && react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "^5.0.1",
+    "socket.io-client": "^4.7.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "keywords": [
+    "react",
+    "video-call",
+    "webrtc",
+    "meeting",
+    "video-conferencing"
+  ],
+  "author": "SmartMeet Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@svgr/webpack": "^8.1.0",
+    "resolve-url-loader": "^5.0.0"
+  }
+}
