@@ -1,43 +1,50 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#0d0d0d;stop-opacity:1"/>
+      <stop offset="0%" style="stop-color:#0d0d0d;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1"/>
     </linearGradient>
   </defs>
   
-  <!-- Background rounded square -->
+  <!-- Background -->
   <rect width="512" height="512" rx="110" fill="url(#bg)"/>
   
-  <!-- Chat bubble outline -->
-  <path d="M 120 155 Q 120 115 165 115 L 365 115 Q 410 115 410 155 L 410 295 Q 410 335 365 335 L 240 335 L 175 395 L 175 335 L 165 335 Q 120 335 120 295 Z" 
-        fill="none" stroke="white" stroke-width="28" stroke-linejoin="round"/>
+  <!-- Outer circle ring -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="white" stroke-width="22"/>
   
-  <!-- Chat bubble inner fill -->
-  <path d="M 145 165 Q 145 140 170 140 L 360 140 Q 385 140 385 165 L 385 285 Q 385 310 360 310 L 235 310 L 185 355 L 185 310 L 170 310 Q 145 310 145 285 Z" 
-        fill="#1a1a1a"/>
+  <!-- User/Person icon at bottom -->
+  <circle cx="256" cy="340" r="48" fill="white"/>
+  <path d="M 160 480 Q 160 400 256 400 Q 352 400 352 480 L 160 480 Z" fill="white"/>
   
-  <!-- Network nodes -->
-  <circle cx="210" cy="200" r="16" fill="white"/>
-  <circle cx="295" cy="185" r="14" fill="white"/>
-  <circle cx="350" cy="235" r="12" fill="white"/>
-  <circle cx="270" cy="265" r="17" fill="white"/>
-  <circle cx="190" cy="255" r="12" fill="white"/>
+  <!-- Chat bubble with AI network -->
+  <path d="M 160 125 Q 160 90 200 90 L 360 90 Q 400 90 400 125 L 400 215 Q 400 250 360 250 L 280 250 L 245 285 L 245 250 L 200 250 Q 160 250 160 215 Z" 
+        fill="none" stroke="white" stroke-width="20" stroke-linejoin="round"/>
   
-  <!-- Connection lines -->
-  <line x1="210" y1="200" x2="295" y2="185" stroke="white" stroke-width="4" opacity="0.7"/>
-  <line x1="295" y1="185" x2="350" y2="235" stroke="white" stroke-width="4" opacity="0.7"/>
-  <line x1="270" y1="265" x2="350" y2="235" stroke="white" stroke-width="4" opacity="0.7"/>
-  <line x1="210" y1="200" x2="270" y2="265" stroke="white" stroke-width="4" opacity="0.7"/>
-  <line x1="190" y1="255" x2="270" y2="265" stroke="white" stroke-width="4" opacity="0.7"/>
-  <line x1="190" y1="255" x2="210" y2="200" stroke="white" stroke-width="4" opacity="0.7"/>
+  <!-- Inner dark fill for bubble -->
+  <path d="M 175 130 Q 175 105 205 105 L 355 105 Q 385 105 385 130 L 385 210 Q 385 235 355 235 L 275 235 L 250 265 L 250 235 L 205 235 Q 175 235 175 210 Z" 
+        fill="#0d0d0d"/>
   
-  <!-- AI sparkle star -->
-  <path d="M 365 145 L 371 160 L 386 163 L 374 173 L 377 188 L 365 180 L 353 188 L 356 173 L 344 163 L 359 160 Z" 
-        fill="white" opacity="0.95"/>
+  <!-- Network nodes in bubble -->
+  <circle cx="220" cy="145" r="12" fill="white"/>
+  <circle cx="280" cy="135" r="10" fill="white"/>
+  <circle cx="325" cy="165" r="9" fill="white"/>
+  <circle cx="265" cy="190" r="13" fill="white"/>
+  <circle cx="210" cy="185" r="9" fill="white"/>
   
-  <!-- Video camera body -->
-  <rect x="330" y="310" width="65" height="48" rx="10" fill="white"/>
-  <!-- Camera lens -->
-  <path d="M 395 320 L 430 305 L 430 370 L 395 355 Z" fill="white"/>
+  <!-- Connection lines between nodes -->
+  <line x1="220" y1="145" x2="280" y2="135" stroke="white" stroke-width="3" opacity="0.8"/>
+  <line x1="280" y1="135" x2="325" y2="165" stroke="white" stroke-width="3" opacity="0.8"/>
+  <line x1="265" y1="190" x2="325" y2="165" stroke="white" stroke-width="3" opacity="0.8"/>
+  <line x1="220" y1="145" x2="265" y2="190" stroke="white" stroke-width="3" opacity="0.8"/>
+  <line x1="210" y1="185" x2="265" y2="190" stroke="white" stroke-width="3" opacity="0.8"/>
+  <line x1="210" y1="185" x2="220" y2="145" stroke="white" stroke-width="3" opacity="0.8"/>
+  
+  <!-- AI sparkle/star -->
+  <path d="M 350 115 L 355 127 L 367 130 L 357 138 L 360 150 L 350 143 L 340 150 L 343 138 L 333 130 L 345 127 Z" 
+        fill="white"/>
+  
+  <!-- Video camera icon -->
+  <rect x="410" y="145" width="52" height="40" rx="8" fill="white"/>
+  <path d="M 462 152 L 490 140 L 490 198 L 462 186 Z" fill="white"/>
+  <circle cx="436" cy="165" r="10" fill="#0d0d0d" opacity="0.6"/>
 </svg>
