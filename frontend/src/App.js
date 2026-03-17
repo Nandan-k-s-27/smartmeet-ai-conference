@@ -487,6 +487,7 @@ function App() {
                     <input
                       type="text"
                       id="meetingId"
+                      autoComplete="off"
                       value={joinMeetingId}
                       onChange={(e) => setJoinMeetingId(e.target.value)}
                       placeholder="Enter meeting ID"
@@ -499,6 +500,7 @@ function App() {
                     <input
                       type="text"
                       id="username"
+                      autoComplete="name"
                       value={joinUsername}
                       onChange={(e) => setJoinUsername(e.target.value)}
                       placeholder="Enter your name"
@@ -536,6 +538,7 @@ function App() {
                     <input
                       type="text"
                       id="createUsername"
+                      autoComplete="name"
                       value={createUsername}
                       onChange={(e) => setCreateUsername(e.target.value)}
                       placeholder="Enter your name"
