@@ -621,6 +621,16 @@ body.light-mode .stars-large {
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
+.lobby-theme-switch-wrap {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.lobby-theme-switch {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -1007,6 +1017,11 @@ body.dark-mode .backend-error-panel .help-text {
 .meeting-controls {
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+.workspace-theme-switch {
+  margin-right: 2px;
 }
 
 .control-btn {

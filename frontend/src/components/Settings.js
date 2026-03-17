@@ -17,9 +17,6 @@ const Settings = ({ isOpen, onClose, localStream, onSettingsChange }) => {
   
   // Video Settings (Working)
   const [mirrorVideo, setMirrorVideo] = useState(true);
-  
-  // General Settings (Working)
-  const [darkMode, setDarkMode] = useState(true);
 
   // Notification state
   const [notification, setNotification] = useState(null);
@@ -171,7 +168,6 @@ const Settings = ({ isOpen, onClose, localStream, onSettingsChange }) => {
     setNoiseSuppression(true);
     setAutoGainControl(true);
     setMirrorVideo(true);
-    setDarkMode(true);
     
     console.log('✅ Settings reset to defaults');
     showNotification('Reset to defaults', 'success');
@@ -184,8 +180,7 @@ const Settings = ({ isOpen, onClose, localStream, onSettingsChange }) => {
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true,
-      mirrorVideo: true,
-      darkMode: true
+      mirrorVideo: true
     };
 
     const savedSettings = saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
@@ -194,7 +189,6 @@ const Settings = ({ isOpen, onClose, localStream, onSettingsChange }) => {
     setNoiseSuppression(savedSettings.noiseSuppression);
     setAutoGainControl(savedSettings.autoGainControl);
     setMirrorVideo(savedSettings.mirrorVideo);
-    setDarkMode(savedSettings.darkMode);
   };
 
   const saveSettings = () => {
@@ -202,22 +196,11 @@ const Settings = ({ isOpen, onClose, localStream, onSettingsChange }) => {
       echoCancellation,
       noiseSuppression,
       autoGainControl,
-      mirrorVideo,
-      darkMode
+      mirrorVideo
     };
     
     // Save to localStorage
     localStorage.setItem('smartmeet_settings', JSON.stringify(settings));
-    
-    // Apply dark mode theme NOW (only when saving)
-    if (darkMode) {
-      document.body.classList.add('dark-mode');
-      document.body.classList.remove('light-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-      document.body.classList.add('light-mode');
-    }
-    console.log('🎨 Theme applied:', darkMode ? 'Dark Mode' : 'Light Mode');
     
     // Apply audio constraints
     if (localStream) {
@@ -280,13 +263,6 @@ const Settings = ({ isOpen, onClose, localStream, onSettingsChange }) => {
             >
               <i className="fas fa-video"></i>
               Video
-            </button>
-            <button
-              className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`}
-              onClick={() => setActiveTab('general')}
-            >
-              <i className="fas fa-sliders-h"></i>
-              General
             </button>
           </div>
 
@@ -399,30 +375,6 @@ const Settings = ({ isOpen, onClose, localStream, onSettingsChange }) => {
               </div>
             )}
 
-            {/* General Settings */}
-            {activeTab === 'general' && (
-              <div className="settings-section">
-                <h3>General Settings</h3>
-
-                <div className="setting-item">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={darkMode}
-                      onChange={(e) => setDarkMode(e.target.checked)}
-                    />
-                    Dark Mode
-                  </label>
-                  <p className="setting-description">
-                    Switch between dark and light theme
-                  </p>
-                </div>
-
-                <p className="settings-note">
-                  <i className="fas fa-info-circle"></i> Theme changes apply when you save settings
-                </p>
-              </div>
-            )}
           </div>
         </div>
 

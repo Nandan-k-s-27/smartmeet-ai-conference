@@ -7,6 +7,7 @@ import Settings from './components/Settings';
 import ConfirmModal from './components/ConfirmModal';
 import MeetingSummary from './components/MeetingSummary';
 import MissedSpeech from './components/MissedSpeech';
+import { ThemeSwitch } from './components/ui/theme-switch-button';
 
 // Production-ready backend URL configuration
 // Set REACT_APP_API_URL in .env or deployment platform
@@ -106,18 +107,12 @@ function App() {
 
   // Apply initial theme on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem('smartmeet_settings');
-    let darkMode = true;
+    const savedTheme =
+      localStorage.getItem('theme') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const darkMode = savedTheme === 'dark';
 
-    if (savedSettings) {
-      try {
-        const settings = JSON.parse(savedSettings);
-        darkMode = settings.darkMode !== undefined ? settings.darkMode : true;
-      } catch (e) {
-        // Ignore parsing errors
-      }
-    }
-
+    document.documentElement.classList.toggle('dark', darkMode);
     if (darkMode) {
       document.body.classList.add('dark-mode');
       document.body.classList.remove('light-mode');
@@ -442,6 +437,9 @@ function App() {
             <div className="stars-layer stars-large"></div>
           </div>
           <div className="lobby-card">
+            <div className="lobby-theme-switch-wrap">
+              <ThemeSwitch className="lobby-theme-switch" />
+            </div>
             <div className="lobby-header">
               <i className="fas fa-video"></i>
               <h1>SmartMeet</h1>
@@ -662,6 +660,7 @@ function App() {
             </span>
           </div>
           <div className="meeting-controls">
+            <ThemeSwitch className="workspace-theme-switch" />
             <button
               className="control-btn"
               onClick={() => setShowSettings(true)}
