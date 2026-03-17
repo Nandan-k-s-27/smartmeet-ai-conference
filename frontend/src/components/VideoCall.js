@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
 import useFaceDetection from '../hooks/useFaceDetection';
 
@@ -74,79 +74,21 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
   const pendingIceCandidates = useRef(new Map()); // Queue ICE candidates before remote description
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
+  const rtcConfigurationRef = useRef(DEFAULT_RTC_CONFIGURATION);
 
-  // WebRTC Configuration with better ICE servers
-  // Build ICE servers list. TURN servers (if any) are read from env vars so
-  // you can configure them without changing source.
-  const DEFAULT_STUNS = [
-    'stun:stun.l.google.com:19302',
-    'stun:stun1.l.google.com:19302',
-    'stun:stun2.l.google.com:19302',
-    'stun:stun3.l.google.com:19302',
-    'stun:stun4.l.google.com:19302'
-  ];
-
-  const iceServers = useMemo(() => {
-    const servers = {
-      iceServers: DEFAULT_STUNS.map(url => ({ urls: url })),
-      iceCandidatePoolSize: 10,
-      bundlePolicy: 'max-bundle',
-      rtcpMuxPolicy: 'require',
-      iceTransportPolicy: 'all' // Try all methods: host, srflx, relay
-    };
-
-    // Add multiple free public TURN servers for maximum compatibility
-    // These are critical for different network/NAT scenarios
-    servers.iceServers.push({
-      urls: [
-        'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:443',
-        'turn:openrelay.metered.ca:443?transport=tcp'
-      ],
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    });
-
-    // Add additional TURN servers for redundancy
-    servers.iceServers.push({
-      urls: 'turn:numb.viagenie.ca',
-      username: 'webrtc@live.com',
-      credential: 'muazkh'
-    });
-
-    servers.iceServers.push({
-      urls: [
-        'turn:turn.anyfirewall.com:443?transport=tcp'
-      ],
-      username: 'webrtc',
-      credential: 'webrtc'
-    });
-
-    // Optional custom TURN configuration via env vars (comma-separated urls allowed)
-    const turnUrls = process.env.REACT_APP_TURN_URL;
-    const turnUsername = process.env.REACT_APP_TURN_USERNAME;
-    const turnCredential = process.env.REACT_APP_TURN_CREDENTIAL;
-
-    if (turnUrls && turnUsername && turnCredential) {
-      try {
-        const urls = turnUrls.split(',').map(s => s.trim()).filter(Boolean);
-        servers.iceServers.push({ 
-          urls, 
-          username: turnUsername, 
-          credential: turnCredential 
-        });
-        console.log('✅ Custom TURN configured:', urls);
-      } catch (e) {
-        console.warn('Failed to parse REACT_APP_TURN_URL, skipping custom TURN:', e);
-      }
-    }
-
-    console.log('🌐 ICE Servers configured:', servers.iceServers.length, 'servers');
-    console.log('🔧 TURN servers enabled for cross-network connectivity');
-    console.log('📡 ICE Transport Policy:', servers.iceTransportPolicy);
-
-    return servers;
-  }, []);
+  const DEFAULT_RTC_CONFIGURATION = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' }
+    ],
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require',
+    iceTransportPolicy: 'all'
+  };
 
   // Initialize connection
   useEffect(() => {
@@ -294,6 +236,7 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
   const initializeConnection = async () => {
     try {
       setConnectionStatus('connecting');
+      await loadRtcConfiguration();
       await initializeMedia();
       
       // Production-ready socket URL configuration
@@ -330,6 +273,42 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
     } catch (error) {
       setConnectionStatus('failed');
       onError?.('Failed to initialize connection: ' + error.message);
+    }
+  };
+
+  const loadRtcConfiguration = async () => {
+    const getBackendBase = () => {
+      if (process.env.REACT_APP_API_URL) {
+        return process.env.REACT_APP_API_URL.replace(/\/+$/, '');
+      }
+      const { protocol, hostname } = window.location;
+      return `${protocol}//${hostname}:5000`;
+    };
+
+    try {
+      const baseUrl = getBackendBase();
+      const response = await fetch(
+        `${baseUrl}/api/webrtc/ice-config?meetingId=${encodeURIComponent(meetingId)}&userId=${encodeURIComponent(userId || '')}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`ICE config request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data?.success && data?.rtcConfiguration?.iceServers?.length) {
+        rtcConfigurationRef.current = {
+          ...DEFAULT_RTC_CONFIGURATION,
+          ...data.rtcConfiguration
+        };
+        console.log('✅ Loaded ICE config from backend:', rtcConfigurationRef.current.iceServers.length, 'servers');
+        return;
+      }
+
+      throw new Error('Invalid ICE config payload from backend');
+    } catch (error) {
+      rtcConfigurationRef.current = DEFAULT_RTC_CONFIGURATION;
+      console.warn('⚠️ Falling back to default STUN-only ICE config:', error.message);
     }
   };
 
@@ -708,7 +687,7 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
       }
 
       const peerConnection = new RTCPeerConnection({
-        ...iceServers,
+        ...rtcConfigurationRef.current,
         iceCandidatePoolSize: 10,
         bundlePolicy: 'max-bundle',
         rtcpMuxPolicy: 'require'

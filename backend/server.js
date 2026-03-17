@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const mongoose = require('mongoose');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const meetingController = require('./controllers/meetingController');
@@ -64,6 +65,45 @@ const io = socketIo(server, {
   allowEIO3: true
 });
 
+const getRtcConfiguration = () => {
+  const defaultIceServers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
+  ];
+
+  const rtcConfiguration = {
+    iceServers: [...defaultIceServers],
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require',
+    iceTransportPolicy: 'all'
+  };
+
+  const turnUrlsRaw = process.env.TURN_URLS || process.env.TURN_URL || '';
+  const turnUsername = process.env.TURN_USERNAME || '';
+  const turnCredential = process.env.TURN_CREDENTIAL || '';
+
+  if (turnUrlsRaw && turnUsername && turnCredential) {
+    const turnUrls = turnUrlsRaw
+      .split(',')
+      .map((url) => url.trim())
+      .filter(Boolean);
+
+    if (turnUrls.length > 0) {
+      rtcConfiguration.iceServers.push({
+        urls: turnUrls,
+        username: turnUsername,
+        credential: turnCredential
+      });
+    }
+  }
+
+  return rtcConfiguration;
+};
+
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -89,6 +129,23 @@ app.get('/api/meetings/:meetingId', meetingController.getMeeting);
 app.post('/api/meetings/:meetingId/join', meetingController.joinMeeting);
 app.post('/api/meetings/:meetingId/leave', meetingController.leaveMeeting);
 app.post('/api/meetings/:meetingId/end', meetingController.endMeeting);
+
+// WebRTC ICE/TURN config endpoint
+app.get('/api/webrtc/ice-config', (req, res) => {
+  try {
+    const rtcConfiguration = getRtcConfiguration();
+    res.json({
+      success: true,
+      rtcConfiguration,
+      hasTurn: rtcConfiguration.iceServers.some((s) => String(s.urls).includes('turn:'))
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to build ICE configuration'
+    });
+  }
+});
 
 // Summary Routes (Gemini AI)
 app.post('/api/summary/generate', summaryController.generateSummary);

@@ -247,6 +247,11 @@ GEMINI_API3=backup_key_optional
 
 # CORS - Frontend URLs (production)
 ALLOWED_ORIGINS=https://your-frontend.vercel.app,https://app.yourdomain.com
+
+# TURN - required for reliable cross-network/global WebRTC connectivity
+TURN_URLS=turn:global.relay.metered.ca:80,turn:global.relay.metered.ca:443,turns:global.relay.metered.ca:443?transport=tcp
+TURN_USERNAME=your_turn_username
+TURN_CREDENTIAL=your_turn_password
 ```
 
 ### Frontend Configuration
@@ -258,6 +263,12 @@ Edit `frontend/.env`:
 REACT_APP_API_URL=http://localhost:5000
 # Production
 REACT_APP_API_URL=https://your-backend.railway.app
+
+# Socket URL (usually same as API)
+REACT_APP_SOCKET_URL=https://your-backend.railway.app
+
+# TURN credentials are NOT required in frontend env.
+# Frontend fetches ICE/TURN config from backend endpoint: /api/webrtc/ice-config
 
 # Optional: TURN server for better connectivity
 REACT_APP_TURN_URL=turn:turnserver.com:3478
