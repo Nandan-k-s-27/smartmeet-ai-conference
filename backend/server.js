@@ -82,12 +82,23 @@ const getRtcConfiguration = () => {
     iceTransportPolicy: 'all'
   };
 
-  const turnUrlsRaw = process.env.TURN_URLS || process.env.TURN_URL || '';
-  const turnUsername = process.env.TURN_USERNAME || '';
-  const turnCredential = process.env.TURN_CREDENTIAL || '';
+  const turnUrlsRaw =
+    process.env.METERED_TURN_URLS ||
+    process.env.METERED_TURN_URL ||
+    process.env.TURN_URLS ||
+    process.env.TURN_URL ||
+    '';
+  const turnUsername = process.env.METERED_TURN_USERNAME || process.env.TURN_USERNAME || '';
+  const turnCredential = process.env.METERED_TURN_CREDENTIAL || process.env.TURN_CREDENTIAL || '';
 
-  if (turnUrlsRaw && turnUsername && turnCredential) {
-    const turnUrls = turnUrlsRaw
+  const defaultMeteredUrls = [
+    'turn:global.relay.metered.ca:80',
+    'turn:global.relay.metered.ca:443',
+    'turns:global.relay.metered.ca:443?transport=tcp'
+  ];
+
+  if (turnUsername && turnCredential) {
+    const turnUrls = (turnUrlsRaw || defaultMeteredUrls.join(','))
       .split(',')
       .map((url) => url.trim())
       .filter(Boolean);
