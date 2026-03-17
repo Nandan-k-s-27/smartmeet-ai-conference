@@ -74,7 +74,6 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
   const pendingIceCandidates = useRef(new Map()); // Queue ICE candidates before remote description
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
-  const rtcConfigurationRef = useRef(DEFAULT_RTC_CONFIGURATION);
 
   const DEFAULT_RTC_CONFIGURATION = {
     iceServers: [
@@ -89,6 +88,7 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
     rtcpMuxPolicy: 'require',
     iceTransportPolicy: 'all'
   };
+  const rtcConfigurationRef = useRef(DEFAULT_RTC_CONFIGURATION);
 
   // Initialize connection
   useEffect(() => {
