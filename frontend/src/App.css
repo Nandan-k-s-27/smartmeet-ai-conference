@@ -467,6 +467,18 @@ code {
   padding: 40px 20px;
 }
 
+.clean-flat-surface {
+  background: #0f172a;
+}
+
+body.light-mode .clean-flat-surface {
+  background: #f5f7fa;
+}
+
+body.dark-mode .clean-flat-surface {
+  background: #0f172a;
+}
+
 .clean-landing-content {
   width: 100%;
   max-width: 760px;

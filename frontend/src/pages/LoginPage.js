@@ -42,7 +42,7 @@ const LoginPage = () => {
   if (!hasGoogleClientId) {
     return (
       <div className="app-container">
-        <div className="lobby-container clean-landing">
+        <div className="lobby-container clean-landing clean-flat-surface">
           <div className="clean-landing-content">
             <div className="lobby-header clean-landing-header">
               <i className="fas fa-lock"></i>
@@ -57,7 +57,7 @@ const LoginPage = () => {
 
   return (
     <div className="app-container">
-      <div className="lobby-container clean-landing">
+      <div className="lobby-container clean-landing clean-flat-surface">
         <div className="clean-landing-content">
           <div className="lobby-header clean-landing-header">
             <i className="fas fa-lock"></i>

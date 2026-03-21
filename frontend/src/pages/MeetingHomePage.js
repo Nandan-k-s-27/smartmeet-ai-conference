@@ -59,14 +59,8 @@ const MeetingHomePage = () => {
 
   return (
     <div className="app-container">
-      <div className="lobby-container">
-        <div className="starfield" aria-hidden="true">
-          <div className="stars-layer stars-small"></div>
-          <div className="stars-layer stars-medium"></div>
-          <div className="stars-layer stars-large"></div>
-        </div>
-
-        <div className="lobby-card" style={{ maxWidth: '700px' }}>
+      <div className="lobby-container clean-landing clean-flat-surface">
+        <div className="clean-landing-content" style={{ maxWidth: '700px' }}>
           <div className="lobby-header">
             <i className="fas fa-video"></i>
             <h1>SmartMeet</h1>
