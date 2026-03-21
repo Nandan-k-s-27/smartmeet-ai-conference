@@ -260,7 +260,14 @@ const MeetingRoomPage = () => {
             />
           </div>
 
-          {showChat && <Chat socket={videoCallSocket} username={user.name} userId={user._id} onClose={() => setShowChat(false)} />}
+          <Chat
+            socket={videoCallSocket}
+            meetingId={meetingId}
+            username={user.name}
+            userId={user._id}
+            isOpen={showChat}
+            onClose={() => setShowChat(false)}
+          />
 
           {showSettings && (
             <Settings socket={videoCallSocket} localStream={localStream} onApplySettings={setAppliedSettings} onClose={() => setShowSettings(false)} />
@@ -277,10 +284,12 @@ const MeetingRoomPage = () => {
 
         {showConfirmLeave && (
           <ConfirmModal
+            isOpen={showConfirmLeave}
             title={isHost ? 'End Meeting' : 'Leave Meeting'}
             message={isHost ? 'This will end the meeting for everyone.' : 'Are you sure you want to leave?'}
+            isHost={isHost}
             onConfirm={confirmLeaveMeeting}
-            onCancel={() => setShowConfirmLeave(false)}
+            onClose={() => setShowConfirmLeave(false)}
           />
         )}
 
