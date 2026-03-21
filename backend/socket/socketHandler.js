@@ -11,7 +11,7 @@ module.exports = (io) => {
 
         socket.on('join-meeting', async (data) => {
             try {
-                const { meetingId, userId, username, avatar = '' } = data;
+                const { meetingId, userId, username } = data;
 
                 console.log('🚀 JOIN-MEETING:', username, 'joining', meetingId);
 
@@ -25,12 +25,12 @@ module.exports = (io) => {
 
                 // Join socket room
                 socket.join(meetingId);
-                activeSockets.set(socket.id, { userId, username, avatar, meetingId });
+                activeSockets.set(socket.id, { userId, username, meetingId });
 
                 // Ensure participant exists (some flows add participant only via HTTP)
                 const existing = meeting.getParticipant(userId);
                 if (!existing) {
-                    meeting.addParticipant(userId, username, socket.id, avatar);
+                    meeting.addParticipant(userId, username, socket.id);
                 } else {
                     // User is reconnecting - clean up old socket from activeSockets map
                     if (existing.socketId && existing.socketId !== socket.id) {
@@ -55,7 +55,6 @@ module.exports = (io) => {
                         socketId: p.socketId,
                         userId: p.userId,
                         username: p.username,
-                        avatar: p.avatar || '',
                         isAudioMuted: p.isAudioMuted,
                         isVideoOff: p.isVideoOff,
                         isHandRaised: p.isHandRaised,
@@ -77,7 +76,6 @@ module.exports = (io) => {
                 socket.to(meetingId).emit('user-joined', {
                     userId,
                     username,
-                    avatar,
                     socketId: socket.id,
                     timestamp: new Date()
                 });
@@ -106,7 +104,7 @@ module.exports = (io) => {
             const session = activeSockets.get(socket.id);
 
             if (session) {
-                const { meetingId, userId, username, avatar } = session;
+                const { meetingId, userId, username } = session;
                 console.log(`   -> User ${username} (${userId}) disconnected from ${meetingId}`);
 
                 const meeting = await meetingStore.getMeeting(meetingId);
@@ -115,7 +113,6 @@ module.exports = (io) => {
                     socket.to(meetingId).emit('user-disconnected', {
                         userId,
                         username,
-                        avatar,
                         socketId: socket.id
                     });
 

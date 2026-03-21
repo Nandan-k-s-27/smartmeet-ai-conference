@@ -85,24 +85,11 @@ const participantSchema = new mongoose.Schema({
 });
 
 const meetingSchema = new mongoose.Schema({
-  _id: {
-    type: String,
-    required: true,
-  },
   meetingId: {
     type: String,
     required: true,
     unique: true,
   },
-  hostId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  participantIds: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
   title: {
     type: String,
     default: 'Untitled Meeting',

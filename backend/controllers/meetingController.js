@@ -1,173 +1,188 @@
-const { customAlphabet } = require('nanoid');
-const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 const MeetingModel = require('../models/Meeting');
+const User = require('../models/User');
 const meetingStore = require('../utils/meetingStore');
-
-const createMeetingCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 8);
-const isValidMeetingId = (meetingId) => /^[A-Z0-9]{6,12}$/.test(String(meetingId || '').toUpperCase());
-const normalizeMeetingId = (meetingId) => String(meetingId || '').trim().toUpperCase();
 
 exports.createMeeting = async (req, res) => {
     try {
-        const user = req.user;
-        const title = (req.body?.title || `${user.name}'s Meeting`).trim();
+        const { host, hostUsername, title } = req.body;
 
-        let meetingId = '';
-        let exists = true;
+        // Auto-generate meeting ID
+        const meetingId = uuidv4().substring(0, 8).toUpperCase();
 
-        while (exists) {
-            meetingId = createMeetingCode();
-            // eslint-disable-next-line no-await-in-loop
-            const found = await MeetingModel.findOne({ meetingId }).select('_id').lean();
-            exists = Boolean(found);
-        }
+        // Create in-memory meeting
+        meetingStore.createMeeting(meetingId, host, hostUsername, title || `${hostUsername}'s Meeting`);
 
-        meetingStore.createMeeting(meetingId, user.id, user.name, title);
-
-        const meeting = await MeetingModel.create({
-            _id: meetingId,
+        // Prepare MongoDB document
+        const dbMeetingData = {
             meetingId,
-            hostId: new mongoose.Types.ObjectId(user.id),
-            participantIds: [new mongoose.Types.ObjectId(user.id)],
-            title,
+            title: title || `${hostUsername}'s Meeting`,
             host: {
-                userId: user.id,
-                username: user.name,
+                userId: host,
+                username: hostUsername
             },
-            participants: [
-                {
-                    userId: user.id,
-                    username: user.name,
-                    joinedAt: new Date(),
-                },
-            ],
-            isActive: true,
-            status: 'active',
-        });
+            participants: [{
+                userId: host,
+                username: hostUsername,
+                joinedAt: new Date()
+            }],
+            isActive: true
+        };
 
-        return res.json({
+        // Save to MongoDB
+        const dbMeeting = new MeetingModel(dbMeetingData);
+        await dbMeeting.save();
+
+        // Create or update user in MongoDB
+        await User.findOneAndUpdate(
+            { userId: host },
+            {
+                userId: host,
+                username: hostUsername,
+                $push: { joinedMeetings: { meetingId: dbMeeting._id, joinedAt: new Date() } }
+            },
+            { upsert: true, new: true }
+        );
+
+        console.log('✅ Meeting created:', meetingId);
+
+        res.json({
             success: true,
-            meetingId: meeting.meetingId,
-            message: 'Meeting created successfully',
+            meetingId,
+            message: 'Meeting created successfully'
         });
     } catch (error) {
-        return res.status(500).json({
+        console.error('❌ Error creating meeting:', error);
+        res.status(500).json({
             success: false,
-            message: 'Failed to create meeting',
+            message: 'Failed to create meeting'
         });
     }
 };
 
 exports.getMeeting = async (req, res) => {
     try {
-        const meetingId = normalizeMeetingId(req.params.meetingId);
+        const { meetingId } = req.params;
+        const meeting = await meetingStore.getMeeting(meetingId);
 
-        if (!isValidMeetingId(meetingId)) {
-            return res.status(400).json({ success: false, message: 'Invalid meeting ID format' });
+        if (!meeting || !meeting.isActive) {
+            return res.status(404).json({
+                success: false,
+                message: 'Meeting not found'
+            });
         }
 
-        const dbMeeting = await MeetingModel.findOne({ meetingId }).lean();
-        if (!dbMeeting || !dbMeeting.isActive) {
-            return res.status(404).json({ success: false, message: 'Meeting not found or inactive' });
-        }
-
-        return res.json({
+        res.json({
             success: true,
             meeting: {
-                meetingId: dbMeeting.meetingId,
-                title: dbMeeting.title,
-                hostId: String(dbMeeting.hostId),
-                participantCount: (dbMeeting.participantIds || []).length,
-                isActive: dbMeeting.isActive,
-            },
+                meetingId: meeting.meetingId,
+                host: meeting.host,
+                hostUsername: meeting.hostUsername,
+                title: meeting.title,
+                participantCount: meeting.participants.length
+            }
         });
     } catch (error) {
-        return res.status(500).json({
+        console.error('❌ Error fetching meeting:', error);
+        res.status(500).json({
             success: false,
-            message: 'Failed to fetch meeting',
+            message: 'Failed to fetch meeting'
         });
     }
 };
 
 exports.joinMeeting = async (req, res) => {
     try {
-        const meetingId = normalizeMeetingId(req.params.meetingId);
-        const user = req.user;
-
-        if (!isValidMeetingId(meetingId)) {
-            return res.status(400).json({ success: false, message: 'Invalid meeting ID format' });
-        }
+        const { meetingId } = req.params;
+        const { userId, username } = req.body;
 
         const meeting = await meetingStore.getMeeting(meetingId);
         if (!meeting || !meeting.isActive) {
-            return res.status(404).json({ success: false, message: 'Meeting not found or inactive' });
-        }
-
-        const dbMeeting = await MeetingModel.findOne({ meetingId });
-        if (!dbMeeting || !dbMeeting.isActive) {
-            return res.status(404).json({ success: false, message: 'Meeting not found or inactive' });
-        }
-
-        const alreadyJoined = dbMeeting.participantIds.some((id) => String(id) === user.id);
-
-        if (!alreadyJoined) {
-            dbMeeting.participantIds.push(new mongoose.Types.ObjectId(user.id));
-            dbMeeting.participants.push({
-                userId: user.id,
-                username: user.name,
-                joinedAt: new Date(),
+            return res.status(404).json({
+                success: false,
+                message: 'Meeting not found'
             });
-            await dbMeeting.save();
         }
 
-        const participant = meeting.addParticipant(user.id, user.name, null, user.avatar || '');
+        // Add to in-memory (socketId null for now, will be updated when socket connects)
+        const participant = meeting.addParticipant(userId, username, null);
 
-        return res.json({
+        // Update MongoDB
+        const dbMeeting = await MeetingModel.findOne({ meetingId });
+        if (dbMeeting) {
+            const existingParticipant = dbMeeting.participants.find(p => p.userId === userId);
+            if (!existingParticipant) {
+                dbMeeting.participants.push({
+                    userId,
+                    username,
+                    joinedAt: new Date()
+                });
+                await dbMeeting.save();
+            }
+        }
+
+        // Create or update user
+        await User.findOneAndUpdate(
+            { userId },
+            {
+                userId,
+                username,
+                $addToSet: { joinedMeetings: { meetingId: dbMeeting?._id, joinedAt: new Date() } }
+            },
+            { upsert: true, new: true }
+        );
+
+        console.log('✅ User joined via API:', username, 'to meeting:', meetingId);
+
+        res.json({
             success: true,
             meeting: {
-                meetingId: dbMeeting.meetingId,
-                hostId: String(dbMeeting.hostId),
-                title: dbMeeting.title,
+                meetingId: meeting.meetingId,
+                host: meeting.host,
+                hostUsername: meeting.hostUsername,
+                title: meeting.title
             },
             participant: {
                 userId: participant.userId,
-                username: participant.username,
-                avatar: user.avatar || '',
-            },
-            isHost: String(dbMeeting.hostId) === user.id,
+                username: participant.username
+            }
         });
     } catch (error) {
-        return res.status(500).json({
+        console.error('❌ Error joining meeting:', error);
+        res.status(500).json({
             success: false,
-            message: 'Failed to join meeting',
+            message: 'Failed to join meeting'
         });
     }
 };
 
 exports.leaveMeeting = async (req, res) => {
     try {
-        const meetingId = normalizeMeetingId(req.params.meetingId);
-        const user = req.user;
+        const { meetingId } = req.params;
+        const { userId } = req.body;
 
         const meeting = await meetingStore.getMeeting(meetingId);
         if (meeting) {
-            meeting.removeParticipant(user.id);
+            meeting.removeParticipant(userId);
+            console.log('✅ User left via API:', userId, 'from meeting:', meetingId);
         }
 
+        // Update MongoDB - mark participant as left
         const dbMeeting = await MeetingModel.findOne({ meetingId });
         if (dbMeeting) {
-            const participant = dbMeeting.participants.find((p) => p.userId === user.id && !p.leftAt);
+            const participant = dbMeeting.participants.find(p => p.userId === userId && !p.leftAt);
             if (participant) {
                 participant.leftAt = new Date();
                 await dbMeeting.save();
             }
         }
 
-        return res.json({ success: true, message: 'Left meeting successfully' });
+        res.json({ success: true, message: 'Left meeting successfully' });
     } catch (error) {
-        return res.status(500).json({
+        console.error('❌ Error leaving meeting:', error);
+        res.status(500).json({
             success: false,
-            message: 'Failed to leave meeting',
+            message: 'Failed to leave meeting'
         });
     }
 };
@@ -178,65 +193,78 @@ exports.leaveMeeting = async (req, res) => {
  */
 exports.endMeeting = async (req, res) => {
     try {
-        const meetingId = normalizeMeetingId(req.params.meetingId);
-        const user = req.user;
+        const { meetingId } = req.params;
+        const { userId } = req.body;
 
         const meeting = await meetingStore.getMeeting(meetingId);
+        
         if (!meeting) {
             return res.status(404).json({
                 success: false,
-                message: 'Meeting not found',
+                message: 'Meeting not found'
             });
         }
 
-        const dbMeeting = await MeetingModel.findOne({ meetingId });
-        if (!dbMeeting) {
-            return res.status(404).json({ success: false, message: 'Meeting not found' });
-        }
-
-        if (String(dbMeeting.hostId) !== user.id) {
+        // Verify the user is the host
+        if (meeting.host !== userId) {
             return res.status(403).json({
                 success: false,
-                message: 'Only the host can end the meeting',
+                message: 'Only the host can end the meeting'
             });
         }
 
+        // Mark meeting as ended in memory
         meeting.isActive = false;
         meeting.endedAt = new Date();
 
-        dbMeeting.isActive = false;
-        dbMeeting.status = 'ended';
-        dbMeeting.endedAt = new Date();
-        dbMeeting.endTime = new Date();
-
-        if (meeting.transcript?.length) {
-            dbMeeting.transcript = meeting.transcript;
-        }
-
-        if (meeting.activities?.length) {
-            dbMeeting.activities = meeting.activities;
-        }
-
-        if (meeting.messages?.length) {
-            dbMeeting.messages = meeting.messages;
-        }
-
-        dbMeeting.participants.forEach((participant) => {
-            if (!participant.leftAt) {
-                participant.leftAt = new Date();
+        // Update MongoDB with all meeting data including transcript and activities
+        const dbMeeting = await MeetingModel.findOne({ meetingId });
+        if (dbMeeting) {
+            dbMeeting.isActive = false;
+            dbMeeting.status = 'ended';
+            dbMeeting.endedAt = new Date();
+            dbMeeting.endTime = new Date();
+            
+            // Save transcript (speech-to-text conversations)
+            if (meeting.transcript && meeting.transcript.length > 0) {
+                dbMeeting.transcript = meeting.transcript;
+                console.log(`📝 Saving ${meeting.transcript.length} transcript entries to database`);
             }
-        });
+            
+            // Save activities (join/leave, hand raise, screen share, etc.)
+            if (meeting.activities && meeting.activities.length > 0) {
+                dbMeeting.activities = meeting.activities;
+                console.log(`📊 Saving ${meeting.activities.length} activity entries to database`);
+            }
+            
+            // Save chat messages (if not already saved)
+            if (meeting.messages && meeting.messages.length > 0) {
+                dbMeeting.messages = meeting.messages;
+                console.log(`💬 Saving ${meeting.messages.length} chat messages to database`);
+            }
+            
+            // Mark all participants as left
+            dbMeeting.participants.forEach(p => {
+                if (!p.leftAt) {
+                    p.leftAt = new Date();
+                }
+            });
+            
+            await dbMeeting.save();
+            console.log(`✅ Meeting data saved to database. Will auto-delete after 24 hours.`);
+        }
 
-        await dbMeeting.save();
+        console.log('✅ Meeting ended by host:', meetingId);
 
-        return res.json({
+        res.json({
             success: true,
-            message: 'Meeting ended successfully',
+            message: 'Meeting ended successfully'
         });
     } catch (error) {
-        return res.status(500).json({
+        console.error('❌ Error ending meeting:', error);
+        res.status(500).json({
             success: false,
-            message: 'Failed to end meeting',
+            message: 'Failed to end meeting'
         });
     }
 };

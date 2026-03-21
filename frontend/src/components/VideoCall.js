@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import io from 'socket.io-client';
 import useFaceDetection from '../hooks/useFaceDetection';
 
-const VideoCall = ({ meetingId, username, userId, avatar = '', isHost, onError, setSocket, onStreamChange, appliedSettings, onCleanup, onUserAway, onUserReturn }) => {
+const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, onStreamChange, appliedSettings, onCleanup, onUserAway, onUserReturn }) => {
   // Debug: Log props on mount
   useEffect(() => {
     console.log('🎬 VideoCall mounted with callbacks:', {
@@ -107,7 +107,7 @@ const VideoCall = ({ meetingId, username, userId, avatar = '', isHost, onError, 
       isMounted = false;
       cleanup();
     };
-  }, [meetingId, username, userId, avatar]);
+  }, [meetingId, username, userId]);
 
   // CRITICAL: Synchronize localStreamRef with localStream state
   // This ensures event handlers always have access to the current stream
@@ -268,7 +268,6 @@ const VideoCall = ({ meetingId, username, userId, avatar = '', isHost, onError, 
         meetingId,
         userId: userId,
         username,
-        avatar,
         deviceInfo: getDeviceInfo()
       });
     } catch (error) {
@@ -436,7 +435,6 @@ const VideoCall = ({ meetingId, username, userId, avatar = '', isHost, onError, 
           meetingId,
           userId: userId,
           username,
-          avatar,
           deviceInfo: getDeviceInfo()
         });
       }
@@ -460,7 +458,6 @@ const VideoCall = ({ meetingId, username, userId, avatar = '', isHost, onError, 
           odersID: `user-${userId}`,
           userId: userId,
           username: username,
-          avatar,
           isAudioMuted: false,
           isVideoOff: false,
           isHandRaised: false,
@@ -531,7 +528,6 @@ const VideoCall = ({ meetingId, username, userId, avatar = '', isHost, onError, 
               socketId: data.socketId,
               userId: data.userId,
               username: data.username,
-              avatar: data.avatar || existingByUser.avatar || '',
               isAudioMuted: false,
               isVideoOff: false,
               isHandRaised: false,
@@ -548,7 +544,6 @@ const VideoCall = ({ meetingId, username, userId, avatar = '', isHost, onError, 
           socketId: data.socketId,
           userId: data.userId,
           username: data.username,
-          avatar: data.avatar || '',
           isAudioMuted: false,
           isVideoOff: false,
           isHandRaised: false,
@@ -2418,15 +2413,7 @@ const VideoCall = ({ meetingId, username, userId, avatar = '', isHost, onError, 
             {participants.map(p => (
               <div key={p.userId || p.socketId} className="participant-item">
                 <div className="participant-info">
-                  {p.avatar ? (
-                    <img
-                      src={p.avatar}
-                      alt={p.username}
-                      style={{ width: '22px', height: '22px', borderRadius: '999px', marginRight: '8px' }}
-                    />
-                  ) : (
-                    <i className="fas fa-user-circle"></i>
-                  )}
+                  <i className="fas fa-user-circle"></i>
                   <span>{p.username} {p.userId === userId ? '(You)' : ''}</span>
                 </div>
                 <div className="participant-status">
