@@ -19,6 +19,9 @@ const server = http.createServer(app);
 // Environment
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Needed behind reverse proxies (Render/NGINX) for secure cookie behavior.
+app.set('trust proxy', 1);
+
 // Connect to MongoDB
 connectDB();
 
@@ -59,7 +62,8 @@ const corsOptions = {
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 const io = socketIo(server, {

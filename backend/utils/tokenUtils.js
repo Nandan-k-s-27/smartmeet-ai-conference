@@ -41,29 +41,31 @@ const verifyHashedToken = (plainToken, hashedToken) => {
   return hash === hashedToken;
 };
 
-const setAuthCookies = (res, accessToken, refreshToken) => {
+const getCookieOptions = (maxAge) => {
   const isProduction = process.env.NODE_ENV === 'production';
-  
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
-    path: '/',
-    maxAge: 15 * 60 * 1000, // 15 minutes
-  });
 
-  res.cookie('refreshToken', refreshToken, {
+  // Cross-origin deployments (e.g. Vercel frontend + Render backend)
+  // require SameSite=None; Secure for cookies to be sent by the browser.
+  const sameSite = isProduction ? 'none' : 'lax';
+
+  return {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite,
     path: '/',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+    maxAge,
+  };
+};
+
+const setAuthCookies = (res, accessToken, refreshToken) => {
+  res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
+  res.cookie('refreshToken', refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
 };
 
 const clearAuthCookies = (res) => {
-  res.clearCookie('accessToken', { path: '/' });
-  res.clearCookie('refreshToken', { path: '/' });
+  const clearOptions = getCookieOptions(0);
+  res.clearCookie('accessToken', clearOptions);
+  res.clearCookie('refreshToken', clearOptions);
 };
 
 module.exports = {

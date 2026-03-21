@@ -23,8 +23,11 @@ const googleLogin = async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
 
-    // Find or create user
+    // Find existing user by googleId first, then by email for account linking.
     let user = await User.findOne({ googleId });
+    if (!user) {
+      user = await User.findOne({ email });
+    }
 
     if (!user) {
       // Create new user
@@ -36,7 +39,8 @@ const googleLogin = async (req, res) => {
       });
       await user.save();
     } else {
-      // Update avatar and name if changed
+      // Link/refresh OAuth profile on existing account.
+      user.googleId = googleId;
       user.avatar = picture;
       user.name = name;
       await user.save();
@@ -87,15 +91,21 @@ const refreshSession = async (req, res) => {
       return res.status(401).json({ error: 'No refresh token' });
     }
 
-    const user = await User.findOne({ refreshTokenHash: { $exists: true } });
-    if (!user) {
+    const tokenUtils = require('../utils/tokenUtils');
+    const decoded = tokenUtils.verifyRefreshToken(refreshToken);
+    if (!decoded?.userId) {
+      clearAuthCookies(res);
+      return res.status(401).json({ error: 'Refresh token invalid' });
+    }
+
+    const user = await User.findById(decoded.userId);
+    if (!user || !user.refreshTokenHash) {
+      clearAuthCookies(res);
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
 
-    // Verify the refresh token is still stored and valid
-    const tokenUtils = require('../utils/tokenUtils');
-    const decoded = tokenUtils.verifyRefreshToken(refreshToken);
-    if (!decoded || !verifyHashedToken(refreshToken, user.refreshTokenHash)) {
+    // Verify refresh token hash for this exact user session
+    if (!verifyHashedToken(refreshToken, user.refreshTokenHash)) {
       clearAuthCookies(res);
       return res.status(401).json({ error: 'Refresh token invalid' });
     }
