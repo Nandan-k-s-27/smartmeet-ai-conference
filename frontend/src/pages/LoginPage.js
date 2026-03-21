@@ -42,9 +42,9 @@ const LoginPage = () => {
   if (!hasGoogleClientId) {
     return (
       <div className="app-container">
-        <div className="lobby-container">
-          <div className="lobby-card" style={{ maxWidth: '520px' }}>
-            <div className="lobby-header">
+        <div className="lobby-container clean-landing">
+          <div className="clean-landing-content">
+            <div className="lobby-header clean-landing-header">
               <i className="fas fa-lock"></i>
               <h1>Sign In Required</h1>
               <p>Google OAuth is not configured. Please set REACT_APP_GOOGLE_CLIENT_ID.</p>
@@ -57,15 +57,9 @@ const LoginPage = () => {
 
   return (
     <div className="app-container">
-      <div className="lobby-container">
-        <div className="starfield" aria-hidden="true">
-          <div className="stars-layer stars-small"></div>
-          <div className="stars-layer stars-medium"></div>
-          <div className="stars-layer stars-large"></div>
-        </div>
-
-        <div className="lobby-card" style={{ maxWidth: '520px' }}>
-          <div className="lobby-header">
+      <div className="lobby-container clean-landing">
+        <div className="clean-landing-content">
+          <div className="lobby-header clean-landing-header">
             <i className="fas fa-lock"></i>
             <h1>Sign In to SmartMeet</h1>
             <p>Secure video meetings with AI-powered summaries</p>
@@ -80,7 +74,7 @@ const LoginPage = () => {
 
           {!showGooglePicker ? (
             <>
-              <div style={{ display: 'grid', gap: '12px', marginBottom: '20px' }}>
+              <div className="clean-landing-auth-row">
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
@@ -109,7 +103,7 @@ const LoginPage = () => {
             </>
           ) : (
             <>
-              <div style={{ display: 'grid', gap: '12px', marginBottom: '20px' }}>
+              <div className="clean-landing-auth-row">
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}

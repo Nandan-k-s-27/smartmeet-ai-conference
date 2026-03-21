@@ -462,6 +462,36 @@ code {
   overflow: hidden;
 }
 
+.clean-landing {
+  overflow: visible;
+  padding: 40px 20px;
+}
+
+.clean-landing-content {
+  width: 100%;
+  max-width: 760px;
+  text-align: center;
+  animation: fadeIn 0.45s ease;
+}
+
+.clean-landing-header {
+  margin-bottom: 32px;
+}
+
+.clean-landing-auth-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+body.dark-mode .clean-landing-content {
+  color: #e0e0e0;
+}
+
+body.light-mode .clean-landing-content {
+  color: #2d3748;
+}
+
 /* ==================== STARFIELD ANIMATION ==================== */
 .starfield {
   position: absolute;
