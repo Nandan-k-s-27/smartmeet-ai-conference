@@ -5,10 +5,12 @@ const http = require('http');
 const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
-const meetingController = require('./controllers/meetingController');
 const summaryController = require('./controllers/summaryController');
 const socketHandler = require('./socket/socketHandler');
+const authRoutes = require('./routes/authRoutes');
+const meetingRoutes = require('./routes/meetingRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -117,6 +119,7 @@ const getRtcConfiguration = () => {
 
 // Middleware
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -135,11 +138,8 @@ if (!isProduction) {
 socketHandler(io);
 
 // API Routes
-app.post('/api/meetings/create', meetingController.createMeeting);
-app.get('/api/meetings/:meetingId', meetingController.getMeeting);
-app.post('/api/meetings/:meetingId/join', meetingController.joinMeeting);
-app.post('/api/meetings/:meetingId/leave', meetingController.leaveMeeting);
-app.post('/api/meetings/:meetingId/end', meetingController.endMeeting);
+app.use('/api/auth', authRoutes);
+app.use('/api/meetings', meetingRoutes);
 
 // WebRTC ICE/TURN config endpoint
 app.get('/api/webrtc/ice-config', (req, res) => {

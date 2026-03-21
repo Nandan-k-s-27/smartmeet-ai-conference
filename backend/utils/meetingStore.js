@@ -14,13 +14,14 @@ class InMemoryMeeting {
         this.isActive = true;
     }
 
-    addParticipant(userId, username, socketId) {
+    addParticipant(userId, username, socketId, avatar = '') {
         // Remove if already exists (reconnection)
         this.participants = this.participants.filter(p => p.userId !== userId);
 
         const participant = {
             userId,
             username,
+            avatar,
             socketId,
             isAudioMuted: false,
             isVideoOff: false,

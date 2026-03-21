@@ -1,29 +1,40 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  userId: {
+  name: {
     type: String,
     required: true,
-    unique: true,
-  },
-  username: {
-    type: String,
-    required: true,
+    trim: true,
   },
   email: {
     type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+  },
+  avatar: {
+    type: String,
+    default: '',
+  },
+  authProvider: {
+    type: String,
+    enum: ['google', 'email'],
+    required: true,
+  },
+  passwordHash: {
+    type: String,
+    select: false,
+  },
+  googleId: {
+    type: String,
+    index: true,
     sparse: true,
   },
-  joinedMeetings: [{
-    meetingId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Meeting',
-    },
-    joinedAt: {
-      type: Date,
-      default: Date.now,
-    },
-  }],
+  refreshTokenHash: {
+    type: String,
+    select: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
