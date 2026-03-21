@@ -39,11 +39,19 @@ export const apiFetch = async (endpoint, options = {}) => {
     }
   }
 
-  const data = await response.json();
+  const raw = await response.text();
+  let data = null;
 
-  if (!response.ok) {
-    throw new Error(data.error || `HTTP ${response.status}`);
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    data = null;
   }
 
-  return data;
+  if (!response.ok) {
+    const message = data?.error || raw || `HTTP ${response.status}`;
+    throw new Error(message);
+  }
+
+  return data || {};
 };

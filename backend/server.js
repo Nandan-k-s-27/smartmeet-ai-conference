@@ -28,9 +28,13 @@ connectDB();
 // Production-ready CORS configuration
 // Set ALLOWED_ORIGINS in .env or deployment platform as comma-separated URLs
 // Example: ALLOWED_ORIGINS=https://your-frontend.com,https://app.yourdomain.com
+const normalizeOrigin = (value) => (value || '').trim().replace(/\/+$/, '');
+
 const getAllowedOrigins = () => {
   if (process.env.ALLOWED_ORIGINS) {
-    return process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
+    return process.env.ALLOWED_ORIGINS.split(',')
+      .map((origin) => normalizeOrigin(origin))
+      .filter(Boolean);
   }
   // Default: allow all in development
   return null;
@@ -40,8 +44,10 @@ const allowedOrigins = getAllowedOrigins();
 
 const corsOptions = {
   origin: (origin, callback) => {
+    const normalizedOrigin = normalizeOrigin(origin);
+
     // Allow requests with no origin (mobile apps, curl, Postman)
-    if (!origin) return callback(null, true);
+    if (!normalizedOrigin) return callback(null, true);
 
     // If ALLOWED_ORIGINS is not set, allow all origins
     if (!allowedOrigins) {
@@ -49,7 +55,7 @@ const corsOptions = {
     }
 
     // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
     }
 
@@ -58,13 +64,29 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Block origin in production if not in allowed list
-    callback(new Error('Not allowed by CORS'));
+    // Deny origin without throwing an internal server error.
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
+
+// Return a clear error in production when the request origin is not allowlisted.
+app.use((req, res, next) => {
+  if (!isProduction || !allowedOrigins) {
+    return next();
+  }
+
+  const requestOrigin = normalizeOrigin(req.headers.origin);
+  if (!requestOrigin || allowedOrigins.includes(requestOrigin)) {
+    return next();
+  }
+
+  return res.status(403).json({
+    error: 'Origin not allowed. Add this URL to ALLOWED_ORIGINS.',
+  });
+});
 
 const io = socketIo(server, {
   cors: corsOptions,
