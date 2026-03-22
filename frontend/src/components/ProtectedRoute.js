@@ -17,7 +17,7 @@ const ProtectedRoute = ({ children }) => {
 
   if (!isAuthenticated) {
     const redirectTo = encodeURIComponent(location.pathname + location.search);
-    return <Navigate to={`/login?redirect=${redirectTo}`} replace />;
+    return <Navigate to={`/?auth=1&redirect=${redirectTo}`} replace />;
   }
 
   return children;

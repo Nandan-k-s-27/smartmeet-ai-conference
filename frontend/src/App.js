@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import LoginPage from './pages/LoginPage';
 import MeetingHomePage from './pages/MeetingHomePage';
 import MeetingRoomPage from './pages/MeetingRoomPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -9,14 +8,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
       <Route
         path="/"
-        element={
-          <ProtectedRoute>
-            <MeetingHomePage />
-          </ProtectedRoute>
-        }
+        element={<MeetingHomePage />}
       />
       <Route
         path="/meeting/:meetingId"
