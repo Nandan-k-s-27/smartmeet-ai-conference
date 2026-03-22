@@ -184,38 +184,53 @@ const MeetingHomePage = () => {
 
       <div className="lobby-container clean-landing clean-flat-surface">
         <div className="clean-landing-content" style={{ maxWidth: '700px' }}>
-          <div className="lobby-header">
-            <i className="fas fa-video"></i>
-            <h1>SmartMeet</h1>
-            <p>{isAuthenticated ? `Welcome back, ${user?.name}` : 'Create and join video meetings in seconds'}</p>
-          </div>
+          <div className="hero-landing">
+            <div className="hero-content">
+              <h1>Run Smarter, More Productive Meetings</h1>
+              <p className="hero-sub">AI-powered summaries, smart presence detection, real-time collaboration.</p>
 
-          {isAuthenticated && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '18px' }}>
-              {user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={user.name}
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '999px',
-                    objectFit: 'cover',
+              <div className="hero-cta">
+                <button className="btn-primary btn-hero" onClick={handleCreateInstantMeeting} disabled={isLoading}>
+                  Create Meeting
+                </button>
+                <button
+                  className="btn-secondary btn-hero"
+                  onClick={() => {
+                    const el = document.getElementById('meetingCode');
+                    if (el) {
+                      el.focus();
+                      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 120, behavior: 'smooth' });
+                    }
                   }}
-                />
-              ) : (
-                <i className="fas fa-user-circle" style={{ fontSize: '42px' }}></i>
-              )}
-              <span>{user?.email}</span>
+                >
+                  Join Meeting ID...
+                </button>
+              </div>
             </div>
-          )}
-
-          <div className="lobby-actions">
-            <button className="btn-primary" onClick={handleCreateInstantMeeting} disabled={isLoading}>
-              <i className="fas fa-bolt"></i>
-              Create Meeting
-            </button>
           </div>
+
+          <section className="features-section">
+            <h3 className="features-title">Unique Features</h3>
+            <div className="features-list">
+              <div className="feature-card">
+                <div className="feature-icon">1</div>
+                <h4>Adaptive AI Summary</h4>
+                <p>Instantly get the key points and action items from any meeting.</p>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon">2</div>
+                <h4>Smart Presence Detection</h4>
+                <p>Know who's engaged and paying attention during the meeting.</p>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon">3</div>
+                <h4>AI Meeting Assistant</h4>
+                <p>An intelligent assistant that drafts summaries, suggests follow-ups, and helps moderate.</p>
+              </div>
+            </div>
+          </section>
 
           <form onSubmit={handleJoinByCode} style={{ marginTop: '20px' }}>
             <div className="form-group">
