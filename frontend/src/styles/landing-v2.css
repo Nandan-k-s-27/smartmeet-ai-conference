@@ -11,7 +11,7 @@
   max-width: 1180px;
   margin: 0 auto;
   border-radius: 28px;
-  overflow: hidden;
+  overflow: visible;
   padding: 24px 26px 30px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 28px 70px rgba(0, 0, 0, 0.45);
 }
@@ -59,22 +59,6 @@
   gap: 12px;
 }
 
-.landing-v2-brand-badge {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #1e40af, #1d4ed8 45%, #38bdf8);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 10px 24px rgba(37, 99, 235, 0.42);
-  color: #ffffff;
-}
-
-.landing-v2-brand-badge i {
-  font-size: 18px;
-}
-
 .landing-v2-brand-text {
   font-size: 45px;
   font-weight: 800;
@@ -91,18 +75,18 @@
 
 .landing-signin-btn,
 .landing-icon-btn {
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(11, 18, 32, 0.55);
-  color: #e5edff;
+  height: 34px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #e6edff;
   cursor: pointer;
-  padding: 0 14px;
+  padding: 0 8px;
   font-size: 14px;
 }
 
 .landing-icon-btn {
-  width: 38px;
+  width: 34px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -111,12 +95,12 @@
 
 .landing-signin-btn:hover,
 .landing-icon-btn:hover {
-  background: rgba(59, 130, 246, 0.28);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .theme-switch-button.landing-v2-switch {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -133,22 +117,26 @@
 }
 
 .landing-account-trigger {
-  height: 38px;
+  height: 34px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  background: rgba(11, 18, 32, 0.55);
+  border: none;
+  background: transparent;
   color: #f8f9ff;
-  padding: 0 10px 0 4px;
+  padding: 0 6px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
+}
+
+.landing-account-trigger:hover {
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .landing-account-avatar,
 .landing-account-initial {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
   object-fit: cover;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
@@ -177,7 +165,7 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
   overflow: hidden;
-  z-index: 1300;
+  z-index: 3000;
 }
 
 .landing-account-menu-header {
@@ -228,6 +216,12 @@
   overflow: hidden;
   border: 1px solid #dbe4f3;
   box-shadow: 0 24px 54px rgba(15, 23, 42, 0.35);
+}
+
+.landing-v2-topbar,
+.landing-v2-top-actions,
+.landing-account {
+  overflow: visible;
 }
 
 .schedule-modal-header {
@@ -533,9 +527,14 @@ body.light-mode .feature-icon {
 body.light-mode .landing-signin-btn,
 body.light-mode .landing-icon-btn,
 body.light-mode .landing-account-trigger {
-  background: rgba(255, 255, 255, 0.72);
-  border-color: rgba(100, 116, 139, 0.35);
+  background: transparent;
   color: #1e293b;
+}
+
+body.light-mode .landing-signin-btn:hover,
+body.light-mode .landing-icon-btn:hover,
+body.light-mode .landing-account-trigger:hover {
+  background: rgba(30, 41, 59, 0.08);
 }
 
 body.light-mode .landing-account-menu {

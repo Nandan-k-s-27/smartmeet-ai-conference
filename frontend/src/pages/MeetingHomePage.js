@@ -319,9 +319,6 @@ const MeetingHomePage = () => {
         <div className="clean-landing-content landing-v2">
           <header className="landing-v2-topbar">
             <div className="landing-v2-brand">
-              <span className="landing-v2-brand-badge">
-                <i className="fas fa-check"></i>
-              </span>
               <span className="landing-v2-brand-text">smartmeet</span>
             </div>
 
@@ -387,11 +384,11 @@ const MeetingHomePage = () => {
                 </button>
               )}
 
-              <ThemeSwitch className="landing-v2-switch" />
-
               <button className="landing-icon-btn" type="button" onClick={handleOpenScheduleModal} title="Schedule meeting">
                 <i className="fas fa-calendar-alt"></i>
               </button>
+
+              <ThemeSwitch className="landing-v2-switch" />
             </div>
           </header>
 
