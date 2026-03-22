@@ -6,7 +6,6 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [detectedAccounts, setDetectedAccounts] = useState([]);
 
   // Fetch current user
   const fetchMe = useCallback(async () => {
@@ -65,10 +64,8 @@ export const AuthProvider = ({ children }) => {
       refreshSession,
       fetchMe,
       logout,
-      detectedAccounts,
-      setDetectedAccounts,
     }),
-    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout, detectedAccounts]
+    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout]
   );
 
   return (

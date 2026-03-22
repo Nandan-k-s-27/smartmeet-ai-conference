@@ -10,7 +10,10 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(84, 35, 161, 0.45) 0%, rgba(84, 35, 161, 0) 36%),
+    radial-gradient(circle at 78% 24%, rgba(244, 114, 182, 0.35) 0%, rgba(244, 114, 182, 0) 34%),
+    linear-gradient(180deg, #0d0d25 0%, #1a1240 42%, #140f34 100%);
   min-height: 100vh;
   color: #333;
   overflow-x: hidden;
