@@ -136,10 +136,16 @@ const refreshSession = async (req, res) => {
 };
 
 // Logout
-const logout = (req, res) => {
+const logout = async (req, res) => {
   try {
-    // Optionally, invalidate refresh token in DB
-    // User.updateOne({ _id: req.user._id }, { refreshTokenHash: null });
+    const refreshToken = req.cookies?.refreshToken;
+    if (refreshToken) {
+      const tokenUtils = require('../utils/tokenUtils');
+      const decoded = tokenUtils.verifyRefreshToken(refreshToken);
+      if (decoded?.userId) {
+        await User.findByIdAndUpdate(decoded.userId, { refreshTokenHash: null }).catch(() => null);
+      }
+    }
 
     clearAuthCookies(res);
     res.json({ success: true });

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -13,15 +13,30 @@ const MeetingHomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [pendingJoinCode, setPendingJoinCode] = useState('');
+  const [scheduleDraft, setScheduleDraft] = useState({
+    title: 'Scheduled SmartMeet Meeting',
+    startAt: '',
+    durationMinutes: 30,
+    description: '',
+  });
   const [error, setError] = useState('');
+  const accountMenuRef = useRef(null);
 
   const hasGoogleClientId = Boolean(process.env.REACT_APP_GOOGLE_CLIENT_ID);
 
   const showError = (message) => {
     setError(message);
     setTimeout(() => setError(''), 5000);
+  };
+
+  const getDefaultScheduleTime = () => {
+    const date = new Date(Date.now() + 60 * 60 * 1000);
+    date.setMinutes(0, 0, 0);
+    return date.toISOString().slice(0, 16);
   };
 
   const createMeeting = useCallback(async () => {
@@ -70,6 +85,16 @@ const MeetingHomePage = () => {
     return false;
   };
 
+  const handleSwitchAccount = () => {
+    if (!hasGoogleClientId) {
+      showError('Google sign-in is not configured. Please set REACT_APP_GOOGLE_CLIENT_ID.');
+      return;
+    }
+    setShowAccountMenu(false);
+    setPendingAction('switch');
+    setShowAuthPrompt(true);
+  };
+
   const handleCreateInstantMeeting = async () => {
     if (!requireAuthFor('create')) {
       return;
@@ -112,7 +137,69 @@ const MeetingHomePage = () => {
     setPendingAction(null);
     setPendingJoinCode('');
     setShowAuthPrompt(false);
+    setShowAccountMenu(false);
+    setShowScheduleModal(false);
     navigate('/', { replace: true });
+  };
+
+  const handleOpenScheduleModal = () => {
+    if (!requireAuthFor('schedule')) {
+      return;
+    }
+    setShowScheduleModal(true);
+  };
+
+  const buildGoogleCalendarUrl = ({ title, startAt, durationMinutes, description, meetingId }) => {
+    const start = new Date(startAt);
+    const end = new Date(start.getTime() + Number(durationMinutes) * 60 * 1000);
+
+    const toGoogleDate = (date) => {
+      const pad = (value) => String(value).padStart(2, '0');
+      return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+    };
+
+    const meetingUrl = `${window.location.origin}/meeting/${meetingId}`;
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: title,
+      dates: `${toGoogleDate(start)}/${toGoogleDate(end)}`,
+      details: `${description || 'SmartMeet scheduled meeting'}\n\nJoin link: ${meetingUrl}`,
+      location: 'SmartMeet Online Meeting',
+    });
+
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
+
+  const handleScheduleMeeting = async (event) => {
+    event.preventDefault();
+
+    if (!scheduleDraft.startAt) {
+      showError('Please select meeting date and time');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const data = await apiFetch('/api/meetings/create', {
+        method: 'POST',
+        body: JSON.stringify({ title: scheduleDraft.title || `${user?.name || 'Guest'}'s Scheduled Meeting` }),
+      });
+
+      const calendarUrl = buildGoogleCalendarUrl({
+        title: scheduleDraft.title || 'Scheduled SmartMeet Meeting',
+        startAt: scheduleDraft.startAt,
+        durationMinutes: scheduleDraft.durationMinutes,
+        description: scheduleDraft.description,
+        meetingId: data.meetingId,
+      });
+
+      window.open(calendarUrl, '_blank', 'noopener,noreferrer');
+      setShowScheduleModal(false);
+    } catch (err) {
+      showError(err.message || 'Failed to schedule meeting');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleSuccess = useCallback(
@@ -134,6 +221,8 @@ const MeetingHomePage = () => {
           if (pendingJoinCode) {
             await joinMeeting(pendingJoinCode);
           }
+        } else if (pendingAction === 'schedule') {
+          setShowScheduleModal(true);
         }
 
         const params = new URLSearchParams(location.search);
@@ -166,12 +255,39 @@ const MeetingHomePage = () => {
     }
   }, [hasGoogleClientId, isAuthenticated, location.search]);
 
+  useEffect(() => {
+    setScheduleDraft((prev) => {
+      if (prev.startAt) {
+        return prev;
+      }
+      return {
+        ...prev,
+        startAt: getDefaultScheduleTime(),
+      };
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!showAccountMenu || !accountMenuRef.current) {
+        return;
+      }
+
+      if (!accountMenuRef.current.contains(event.target)) {
+        setShowAccountMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAccountMenu]);
+
   return (
     <div className="app-container">
-      {showAuthPrompt && !isAuthenticated && (
+      {showAuthPrompt && (
         <div className="auth-prompt-popover" role="dialog" aria-label="Sign up with Google">
           <div className="auth-prompt-header">
-            <strong>Sign up to continue</strong>
+            <strong>{pendingAction === 'switch' ? 'Switch Google account' : 'Sign up to continue'}</strong>
             <button
               type="button"
               className="auth-prompt-close"
@@ -179,6 +295,7 @@ const MeetingHomePage = () => {
                 if (!isSigningIn) {
                   setShowAuthPrompt(false);
                   setPendingAction(null);
+                  setPendingJoinCode('');
                 }
               }}
               aria-label="Close sign-up prompt"
@@ -207,8 +324,74 @@ const MeetingHomePage = () => {
               </span>
               <span className="landing-v2-brand-text">smartmeet</span>
             </div>
-            <div className="landing-v2-switch-wrap">
+
+            <div className="landing-v2-top-actions">
+              {isAuthenticated ? (
+                <div className="landing-account" ref={accountMenuRef}>
+                  <button
+                    className="landing-account-trigger"
+                    type="button"
+                    onClick={() => setShowAccountMenu((prev) => !prev)}
+                  >
+                    {user?.avatar ? (
+                      <img className="landing-account-avatar" src={user.avatar} alt={user.name} />
+                    ) : (
+                      <span className="landing-account-initial">{(user?.name || 'U').slice(0, 1).toUpperCase()}</span>
+                    )}
+                    <span className="landing-account-name">{user?.name || 'Account'}</span>
+                    <i className="fas fa-chevron-down"></i>
+                  </button>
+
+                  {showAccountMenu && (
+                    <div className="landing-account-menu">
+                      <div className="landing-account-menu-header">
+                        <strong>{user?.email}</strong>
+                      </div>
+
+                      <a
+                        href="https://myaccount.google.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="landing-account-menu-item"
+                      >
+                        <i className="fas fa-user-cog"></i>
+                        Google account settings
+                      </a>
+
+                      <button type="button" className="landing-account-menu-item" onClick={handleSwitchAccount}>
+                        <i className="fas fa-exchange-alt"></i>
+                        Switch account
+                      </button>
+
+                      <button type="button" className="landing-account-menu-item logout" onClick={handleLogout}>
+                        <i className="fas fa-sign-out-alt"></i>
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="landing-signin-btn"
+                  onClick={() => {
+                    if (!hasGoogleClientId) {
+                      showError('Google sign-in is not configured. Please set REACT_APP_GOOGLE_CLIENT_ID.');
+                      return;
+                    }
+                    setPendingAction('signin');
+                    setShowAuthPrompt(true);
+                  }}
+                >
+                  Sign in
+                </button>
+              )}
+
               <ThemeSwitch className="landing-v2-switch" />
+
+              <button className="landing-icon-btn" type="button" onClick={handleOpenScheduleModal} title="Schedule meeting">
+                <i className="fas fa-calendar-alt"></i>
+              </button>
             </div>
           </header>
 
@@ -258,18 +441,6 @@ const MeetingHomePage = () => {
             </div>
           </section>
 
-          {isAuthenticated && (
-            <button
-              className="btn-secondary"
-              type="button"
-              onClick={handleLogout}
-              style={{ width: '100%', marginTop: '12px' }}
-            >
-              <i className="fas fa-sign-out-alt"></i>
-              Logout
-            </button>
-          )}
-
           {error && (
             <div className="error-message" style={{ position: 'relative', marginTop: '14px' }}>
               <i className="fas fa-exclamation-circle"></i>
@@ -278,6 +449,73 @@ const MeetingHomePage = () => {
           )}
         </div>
       </div>
+
+      {showScheduleModal && (
+        <div className="schedule-modal-overlay" onClick={() => setShowScheduleModal(false)}>
+          <form className="schedule-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleScheduleMeeting}>
+            <div className="schedule-modal-header">
+              <h3>
+                <i className="fas fa-calendar-check"></i>
+                Schedule Meeting
+              </h3>
+              <button type="button" className="schedule-modal-close" onClick={() => setShowScheduleModal(false)}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div className="schedule-modal-body">
+              <label htmlFor="schedule-title">Meeting title</label>
+              <input
+                id="schedule-title"
+                value={scheduleDraft.title}
+                onChange={(e) => setScheduleDraft((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Team sync"
+              />
+
+              <label htmlFor="schedule-start">Date and time</label>
+              <input
+                id="schedule-start"
+                type="datetime-local"
+                value={scheduleDraft.startAt}
+                onChange={(e) => setScheduleDraft((prev) => ({ ...prev, startAt: e.target.value }))}
+                required
+              />
+
+              <label htmlFor="schedule-duration">Duration</label>
+              <select
+                id="schedule-duration"
+                value={scheduleDraft.durationMinutes}
+                onChange={(e) => setScheduleDraft((prev) => ({ ...prev, durationMinutes: Number(e.target.value) }))}
+              >
+                <option value={15}>15 minutes</option>
+                <option value={30}>30 minutes</option>
+                <option value={45}>45 minutes</option>
+                <option value={60}>1 hour</option>
+                <option value={90}>1 hour 30 minutes</option>
+              </select>
+
+              <label htmlFor="schedule-description">Description (optional)</label>
+              <textarea
+                id="schedule-description"
+                rows={3}
+                value={scheduleDraft.description}
+                onChange={(e) => setScheduleDraft((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Agenda, goals, and notes"
+              />
+            </div>
+
+            <div className="schedule-modal-footer">
+              <button type="button" className="btn-secondary" onClick={() => setShowScheduleModal(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary" disabled={isLoading}>
+                <i className="fas fa-calendar-plus"></i>
+                Create in Google Calendar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

@@ -14,8 +14,15 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user || null);
       return data.user || null;
     } catch (error) {
-      setUser(null);
-      return null;
+      // Access token may be expired. Attempt session refresh once.
+      try {
+        const refreshed = await apiFetch('/api/auth/refresh', { method: 'POST' });
+        setUser(refreshed.user || null);
+        return refreshed.user || null;
+      } catch (refreshError) {
+        setUser(null);
+        return null;
+      }
     }
   }, []);
 

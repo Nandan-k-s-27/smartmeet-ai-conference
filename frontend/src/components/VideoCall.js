@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import io from 'socket.io-client';
 import useFaceDetection from '../hooks/useFaceDetection';
+import './VideoCall.css';
 
 const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, onStreamChange, appliedSettings, onCleanup, onUserAway, onUserReturn }) => {
   // Debug: Log props on mount

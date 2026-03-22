@@ -13,6 +13,6 @@ router.get('/me', requireAuth, authController.getCurrentUser);
 router.post('/refresh', authController.refreshSession);
 
 // POST /api/auth/logout - Logout
-router.post('/logout', requireAuth, authController.logout);
+router.post('/logout', authController.logout);
 
 module.exports = router;

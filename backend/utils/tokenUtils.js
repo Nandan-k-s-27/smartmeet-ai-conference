@@ -3,8 +3,10 @@ const crypto = require('crypto');
 
 const ACCESS_TOKEN_SECRET = process.env.JWT_ACCESS_SECRET || 'dev-access-secret-change-in-production';
 const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-in-production';
-const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
+const ACCESS_TOKEN_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '15m';
+const REFRESH_TOKEN_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '30d';
+const ACCESS_COOKIE_MAX_AGE_MS = Number(process.env.ACCESS_COOKIE_MAX_AGE_MS || 15 * 60 * 1000);
+const REFRESH_COOKIE_MAX_AGE_MS = Number(process.env.REFRESH_COOKIE_MAX_AGE_MS || 30 * 24 * 60 * 60 * 1000);
 
 const signAccessToken = (userId) => {
   return jwt.sign({ userId }, ACCESS_TOKEN_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
@@ -58,8 +60,8 @@ const getCookieOptions = (maxAge) => {
 };
 
 const setAuthCookies = (res, accessToken, refreshToken) => {
-  res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
-  res.cookie('refreshToken', refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
+  res.cookie('accessToken', accessToken, getCookieOptions(ACCESS_COOKIE_MAX_AGE_MS));
+  res.cookie('refreshToken', refreshToken, getCookieOptions(REFRESH_COOKIE_MAX_AGE_MS));
 };
 
 const clearAuthCookies = (res) => {
