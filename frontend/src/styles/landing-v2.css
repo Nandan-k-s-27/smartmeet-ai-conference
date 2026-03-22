@@ -49,7 +49,7 @@
   align-items: center;
   justify-content: space-between;
   position: relative;
-  z-index: 2;
+  z-index: 40;
   margin-bottom: 42px;
 }
 
@@ -71,6 +71,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  position: relative;
+  z-index: 50;
 }
 
 .landing-signin-btn,
@@ -114,6 +116,7 @@
 
 .landing-account {
   position: relative;
+  z-index: 60;
 }
 
 .landing-account-trigger {
@@ -165,7 +168,7 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
   overflow: hidden;
-  z-index: 3000;
+  z-index: 9999;
 }
 
 .landing-account-menu-header {
@@ -341,6 +344,38 @@
 
 .hero-landing-v2 .hero-cta {
   gap: 18px;
+  align-items: center;
+}
+
+.hero-join-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hero-join-input {
+  height: 54px;
+  min-width: 380px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background: rgba(13, 18, 34, 0.6);
+  color: #eef2ff;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.hero-join-input::placeholder {
+  color: #c7d1e8;
+}
+
+.hero-join-input:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.9);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+}
+
+.hero-join-group .btn-hero {
+  min-width: 130px;
 }
 
 .hero-landing-v2 .btn-hero {
@@ -451,6 +486,10 @@
     height: 56px;
   }
 
+  .hero-join-input {
+    min-width: 300px;
+  }
+
   .features-title {
     font-size: 42px;
   }
@@ -483,6 +522,18 @@
 
   .hero-landing-v2 .hero-cta {
     flex-direction: column;
+  }
+
+  .hero-join-group {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .hero-join-input {
+    min-width: 0;
+    width: 100%;
+    max-width: 360px;
+    height: 50px;
   }
 
   .hero-landing-v2 .btn-hero {
@@ -555,4 +606,14 @@ body.light-mode .theme-switch-button.landing-v2-switch {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+body.light-mode .hero-join-input {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(100, 116, 139, 0.35);
+  color: #1e293b;
+}
+
+body.light-mode .hero-join-input::placeholder {
+  color: #64748b;
 }

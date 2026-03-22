@@ -8,11 +8,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   return (
     <Routes>
+      <Route path="/" element={<MeetingHomePage />} />
       <Route path="/login" element={<Navigate to="/" replace />} />
-      <Route
-        path="/"
-        element={<MeetingHomePage />}
-      />
       <Route
         path="/meeting/:meetingId"
         element={

@@ -15,6 +15,7 @@ const MeetingHomePage = () => {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [joinInput, setJoinInput] = useState('');
   const [pendingAction, setPendingAction] = useState(null);
   const [pendingJoinCode, setPendingJoinCode] = useState('');
   const [scheduleDraft, setScheduleDraft] = useState({
@@ -95,6 +96,29 @@ const MeetingHomePage = () => {
     setShowAuthPrompt(true);
   };
 
+  const normalizeMeetingInput = (rawValue) => {
+    const value = (rawValue || '').trim();
+    if (!value) {
+      return '';
+    }
+
+    try {
+      const hasProtocol = /^https?:\/\//i.test(value);
+      if (hasProtocol) {
+        const url = new URL(value);
+        const parts = url.pathname.split('/').filter(Boolean);
+        const meetingIndex = parts.findIndex((part) => part.toLowerCase() === 'meeting');
+        if (meetingIndex >= 0 && parts[meetingIndex + 1]) {
+          return parts[meetingIndex + 1].toUpperCase();
+        }
+      }
+    } catch (err) {
+      // Not a URL, continue with raw text.
+    }
+
+    return value.toUpperCase();
+  };
+
   const handleCreateInstantMeeting = async () => {
     if (!requireAuthFor('create')) {
       return;
@@ -102,24 +126,10 @@ const MeetingHomePage = () => {
     await createMeeting();
   };
 
-  const requestJoinCode = () => {
-    const inputCode = window.prompt('Enter Meeting ID or Code');
-    if (!inputCode) {
-      return null;
-    }
-
-    const normalizedCode = inputCode.trim().toUpperCase();
-    if (!normalizedCode) {
-      showError('Please enter a valid meeting code');
-      return null;
-    }
-
-    return normalizedCode;
-  };
-
   const handleJoinMeetingClick = async () => {
-    const normalizedCode = requestJoinCode();
+    const normalizedCode = normalizeMeetingInput(joinInput);
     if (!normalizedCode) {
+      showError('Please enter a meeting ID or paste a meeting link');
       return;
     }
 
@@ -233,6 +243,7 @@ const MeetingHomePage = () => {
 
         setPendingAction(null);
         setPendingJoinCode('');
+        setShowAccountMenu(false);
       } catch (err) {
         showError(err.message || 'Google sign-in failed');
       } finally {
@@ -401,13 +412,23 @@ const MeetingHomePage = () => {
                 <button className="btn-primary btn-hero" onClick={handleCreateInstantMeeting} disabled={isLoading}>
                   Create Meeting
                 </button>
-                <button
-                  className="btn-secondary btn-hero"
-                  onClick={handleJoinMeetingClick}
-                >
-                  Join Meeting ID...
-                  <i className="fas fa-chevron-right"></i>
-                </button>
+                <div className="hero-join-group">
+                  <input
+                    className="hero-join-input"
+                    value={joinInput}
+                    onChange={(e) => setJoinInput(e.target.value)}
+                    placeholder="Enter meeting ID or paste meeting link"
+                    aria-label="Meeting ID or link"
+                  />
+                  <button
+                    className="btn-secondary btn-hero"
+                    onClick={handleJoinMeetingClick}
+                    type="button"
+                  >
+                    Join
+                    <i className="fas fa-chevron-right"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
