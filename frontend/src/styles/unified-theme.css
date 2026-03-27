@@ -5,6 +5,9 @@
   --brand-accent-soft: rgba(37, 99, 235, 0.16);
   --brand-accent-softer: rgba(37, 99, 235, 0.1);
   --brand-on-accent: #ffffff;
+  --action-btn-height: 44px;
+  --action-btn-height-lg: 52px;
+  --action-btn-radius: 12px;
 }
 
 body.light-mode {
@@ -61,9 +64,82 @@ body {
   background: var(--app-surface-muted) !important;
 }
 
+.schedule-modal,
+.landing-account-menu,
+.poll-modal-content,
+.missed-messages-popup,
+.missed-speech-popup,
+.settings-modal,
+.confirm-modal-content,
+.chat-container,
+.modal-content {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+}
+
+.missed-speech-header,
+.missed-messages-header,
+.missed-speech-footer,
+.missed-messages-footer,
+.poll-modal-header,
+.poll-modal-footer,
+.schedule-modal-header,
+.schedule-modal-footer {
+  border-color: var(--app-border) !important;
+}
+
+/* Action button sizing normalization */
+.btn-primary,
+.btn-secondary,
+.btn-cancel,
+.btn-confirm-danger,
+.settings-btn-primary,
+.settings-btn-secondary,
+.apply-btn,
+.test-btn,
+.poll-btn-cancel,
+.poll-btn-create,
+.generate-summary-btn,
+.summarize-btn,
+.chat-send-btn,
+.chat-attach-btn,
+.control-btn,
+.schedule-modal-footer .btn-primary,
+.schedule-modal-footer .btn-secondary {
+  min-height: var(--action-btn-height) !important;
+  padding: 0 18px !important;
+  border-radius: var(--action-btn-radius) !important;
+  font-size: 0.98rem !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+}
+
+.hero-landing-v2 .btn-hero {
+  min-height: var(--action-btn-height-lg) !important;
+  height: var(--action-btn-height-lg) !important;
+  min-width: 198px !important;
+  padding: 0 24px !important;
+  border-radius: 14px !important;
+  font-size: 1.1rem !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+}
+
+.hero-join-group .btn-hero {
+  min-width: 150px !important;
+}
+
+.hero-join-input {
+  min-height: var(--action-btn-height-lg) !important;
+  height: var(--action-btn-height-lg) !important;
+  padding: 0 16px !important;
+  font-size: 1rem !important;
+}
+
 /* Primary action unification */
 .btn-primary,
 .chat-send-btn,
+.chat-attach-btn,
 .settings-btn-primary,
 .apply-btn,
 .poll-btn-create,
@@ -86,6 +162,7 @@ body {
 
 .btn-primary:hover,
 .chat-send-btn:hover,
+.chat-attach-btn:hover,
 .settings-btn-primary:hover,
 .apply-btn:hover,
 .poll-btn-create:hover,
@@ -105,6 +182,11 @@ body {
 .test-btn,
 .back-btn,
 .poll-btn-cancel,
+.chat-actions button,
+.chat-poll-btn,
+.schedule-modal-close,
+.minimize-btn,
+.close-btn,
 .landing-signin-btn,
 .landing-icon-btn,
 .landing-account-trigger,
@@ -120,6 +202,11 @@ body {
 .test-btn:hover,
 .back-btn:hover,
 .poll-btn-cancel:hover,
+.chat-actions button:hover,
+.chat-poll-btn:hover,
+.schedule-modal-close:hover,
+.minimize-btn:hover,
+.close-btn:hover,
 .landing-signin-btn:hover,
 .landing-icon-btn:hover,
 .landing-account-trigger:hover,
@@ -146,6 +233,14 @@ body {
 .theme-switch-icon,
 .hero-landing-v2 .hero-content h1,
 .features-title {
+  color: var(--brand-accent) !important;
+}
+
+.sender-name,
+.speaker-name,
+.summary-content h4,
+.poll-modal-header h3,
+.schedule-modal-header h3 {
   color: var(--brand-accent) !important;
 }
 
