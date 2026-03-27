@@ -1,0 +1,174 @@
+/* Unified color system: one brand accent across the application in both themes. */
+:root {
+  --brand-accent: #2563eb;
+  --brand-accent-hover: #1d4ed8;
+  --brand-accent-soft: rgba(37, 99, 235, 0.16);
+  --brand-accent-softer: rgba(37, 99, 235, 0.1);
+  --brand-on-accent: #ffffff;
+}
+
+body.light-mode {
+  --app-page-bg:
+    radial-gradient(circle at 22% 10%, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0) 34%),
+    linear-gradient(180deg, #f7f9ff 0%, #eef3ff 100%);
+  --app-surface: #ffffff;
+  --app-surface-muted: #f7faff;
+  --app-border: rgba(37, 99, 235, 0.18);
+  --app-text: #12203a;
+}
+
+body.dark-mode {
+  --app-page-bg:
+    radial-gradient(circle at 20% 8%, rgba(37, 99, 235, 0.28) 0%, rgba(37, 99, 235, 0) 34%),
+    linear-gradient(180deg, #0d1426 0%, #101a30 100%);
+  --app-surface: #111b31;
+  --app-surface-muted: #16233f;
+  --app-border: rgba(59, 130, 246, 0.35);
+  --app-text: #e8efff;
+}
+
+body {
+  background: var(--app-page-bg) !important;
+  color: var(--app-text);
+}
+
+.clean-flat-surface,
+.meeting-container,
+.video-call-container,
+.settings-modal,
+.chat-container,
+.confirm-modal-content,
+.modal-content,
+.presence-indicator,
+.presence-toast,
+.host-confirm-dialog {
+  border-color: var(--app-border) !important;
+}
+
+.clean-flat-surface,
+.meeting-container,
+.video-call-container {
+  background: var(--app-page-bg) !important;
+}
+
+.chat-messages,
+.chat-input-container,
+.settings-tabs,
+.settings-body,
+.messages-list,
+.missed-speech-body,
+.missed-messages-body {
+  background: var(--app-surface-muted) !important;
+}
+
+/* Primary action unification */
+.btn-primary,
+.chat-send-btn,
+.settings-btn-primary,
+.apply-btn,
+.poll-btn-create,
+.generate-summary-btn,
+.summarize-btn,
+.missed-speech-footer .summarize-btn,
+.missed-messages-minimized,
+.missed-speech-minimized,
+.header-icon,
+.summary-icon,
+.speaker-avatar,
+.sender-avatar,
+.user-badge,
+.control-btn:not(.end-call) {
+  background: var(--brand-accent) !important;
+  color: var(--brand-on-accent) !important;
+  border-color: transparent !important;
+  box-shadow: 0 8px 22px var(--brand-accent-soft) !important;
+}
+
+.btn-primary:hover,
+.chat-send-btn:hover,
+.settings-btn-primary:hover,
+.apply-btn:hover,
+.poll-btn-create:hover,
+.generate-summary-btn:hover,
+.summarize-btn:hover,
+.missed-speech-footer .summarize-btn:hover,
+.missed-messages-minimized:hover,
+.missed-speech-minimized:hover,
+.control-btn:not(.end-call):hover {
+  background: var(--brand-accent-hover) !important;
+}
+
+/* Secondary action unification */
+.btn-secondary,
+.btn-cancel,
+.settings-btn-secondary,
+.test-btn,
+.back-btn,
+.poll-btn-cancel,
+.landing-signin-btn,
+.landing-icon-btn,
+.landing-account-trigger,
+.theme-switch-button {
+  background: var(--brand-accent-softer) !important;
+  color: var(--brand-accent) !important;
+  border: 1px solid var(--app-border) !important;
+}
+
+.btn-secondary:hover,
+.btn-cancel:hover,
+.settings-btn-secondary:hover,
+.test-btn:hover,
+.back-btn:hover,
+.poll-btn-cancel:hover,
+.landing-signin-btn:hover,
+.landing-icon-btn:hover,
+.landing-account-trigger:hover,
+.theme-switch-button:hover {
+  background: var(--brand-accent-soft) !important;
+  border-color: var(--brand-accent) !important;
+}
+
+/* Keep destructive actions destructive, but consistent shape and contrast */
+.control-btn.end-call,
+.btn-confirm-danger,
+.summary-error button,
+.poll-option-remove {
+  color: #fff !important;
+}
+
+/* Text and icon accents */
+.meeting-info h2 .meeting-icon,
+.message-sender,
+.setting-value,
+.settings-header i,
+.poll-question i,
+.file-icon,
+.theme-switch-icon,
+.hero-landing-v2 .hero-content h1,
+.features-title {
+  color: var(--brand-accent) !important;
+}
+
+.hero-join-input:focus,
+.chat-input:focus,
+.setting-item select:focus,
+.setting-item input[type='text']:focus,
+.poll-form-group input:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--brand-accent) !important;
+  box-shadow: 0 0 0 3px var(--brand-accent-soft) !important;
+}
+
+.connection-status.checking,
+body.dark-mode .connection-status.checking,
+body.light-mode .connection-status.checking {
+  background: var(--brand-accent-softer) !important;
+  border-color: var(--app-border) !important;
+}
+
+body.light-mode .theme-switch-button.landing-v2-switch,
+body.dark-mode .theme-switch-button.landing-v2-switch {
+  background: var(--brand-accent-softer) !important;
+}

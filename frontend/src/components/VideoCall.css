@@ -1531,39 +1531,6 @@ button:focus-visible {
   transform: scaleY(1);
 }
 
-/* Tooltip Styles */
-[title] {
-  position: relative;
-}
-
-[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  z-index: 1000;
-  margin-bottom: 5px;
-  animation: fadeIn 0.2s ease;
-}
-
-[title]:hover::before {
-  content: '';
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.9);
-  z-index: 1000;
-}
-
 /* Pulse Animation for Important Elements */
 @keyframes pulse-slow {
   0%, 100% {
