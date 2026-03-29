@@ -15,6 +15,7 @@ const MeetingHomePage = () => {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [googleLoginRenderKey, setGoogleLoginRenderKey] = useState(0);
   const [joinInput, setJoinInput] = useState('');
   const [pendingAction, setPendingAction] = useState(null);
   const [pendingJoinCode, setPendingJoinCode] = useState('');
@@ -86,13 +87,16 @@ const MeetingHomePage = () => {
     return false;
   };
 
-  const handleSwitchAccount = () => {
+  const handleSwitchAccount = async () => {
     if (!hasGoogleClientId) {
       showError('Google sign-in is not configured. Please set REACT_APP_GOOGLE_CLIENT_ID.');
       return;
     }
+
+    await logout();
     setShowAccountMenu(false);
     setPendingAction('switch');
+    setGoogleLoginRenderKey((prev) => prev + 1);
     setShowAuthPrompt(true);
   };
 
@@ -146,6 +150,7 @@ const MeetingHomePage = () => {
     await logout();
     setPendingAction(null);
     setPendingJoinCode('');
+    setGoogleLoginRenderKey((prev) => prev + 1);
     setShowAuthPrompt(false);
     setShowAccountMenu(false);
     setShowScheduleModal(false);
@@ -315,6 +320,7 @@ const MeetingHomePage = () => {
             </button>
           </div>
           <GoogleLogin
+            key={googleLoginRenderKey}
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
             text="signin_with"

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import { googleLogout } from '@react-oauth/google';
 import { apiFetch } from '../utils/api';
 
 const AuthContext = createContext(null);
@@ -56,11 +57,25 @@ export const AuthProvider = ({ children }) => {
     return data.user || null;
   }, []);
 
+  const clearGoogleSessionHints = useCallback(() => {
+    // Clear Google Identity auto-select so users can choose another account.
+    try {
+      googleLogout();
+    } catch (error) {
+      // Ignore provider-side sign-out failures; app logout still proceeds.
+    }
+
+    if (window.google?.accounts?.id?.disableAutoSelect) {
+      window.google.accounts.id.disableAutoSelect();
+    }
+  }, []);
+
   // Logout
   const logout = useCallback(async () => {
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
+    clearGoogleSessionHints();
     setUser(null);
-  }, []);
+  }, [clearGoogleSessionHints]);
 
   const value = useMemo(
     () => ({
@@ -71,8 +86,9 @@ export const AuthProvider = ({ children }) => {
       refreshSession,
       fetchMe,
       logout,
+      clearGoogleSessionHints,
     }),
-    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout]
+    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout, clearGoogleSessionHints]
   );
 
   return (
