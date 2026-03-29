@@ -8,7 +8,7 @@ import { AuthProvider } from './context/AuthContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+const googleClientId = (process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim();
 
 const RootApp = () => {
   if (!googleClientId) {

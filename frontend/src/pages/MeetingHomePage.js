@@ -28,7 +28,7 @@ const MeetingHomePage = () => {
   const [error, setError] = useState('');
   const accountMenuRef = useRef(null);
 
-  const hasGoogleClientId = Boolean(process.env.REACT_APP_GOOGLE_CLIENT_ID);
+  const hasGoogleClientId = Boolean((process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim());
 
   const showError = (message) => {
     setError(message);
