@@ -248,6 +248,8 @@ GEMINI_API3=backup_key_optional
 # Google OAuth - required for sign-in
 # Must match frontend REACT_APP_GOOGLE_CLIENT_ID exactly
 GOOGLE_CLIENT_ID=your_google_web_client_id.apps.googleusercontent.com
+# Optional: allow multiple client IDs (comma-separated)
+# GOOGLE_CLIENT_IDS=your_primary_client_id.apps.googleusercontent.com,your_secondary_client_id.apps.googleusercontent.com
 
 # CORS - Frontend URLs (production)
 ALLOWED_ORIGINS=https://your-frontend.vercel.app,https://app.yourdomain.com

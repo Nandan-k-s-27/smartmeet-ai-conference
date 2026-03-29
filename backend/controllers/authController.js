@@ -2,14 +2,40 @@ const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const { signAccessToken, signRefreshToken, hashToken, verifyHashedToken, setAuthCookies, clearAuthCookies } = require('../utils/tokenUtils');
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+const parseGoogleClientIds = () => {
+  const primary = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+  const extras = String(process.env.GOOGLE_CLIENT_IDS || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
 
-const getAuthFailureHint = (error) => {
+  const merged = [primary, ...extras].filter(Boolean);
+  return [...new Set(merged)];
+};
+
+const GOOGLE_CLIENT_IDS = parseGoogleClientIds();
+const client = new OAuth2Client(GOOGLE_CLIENT_IDS[0] || undefined);
+
+const decodeAudienceFromCredential = (credential) => {
+  try {
+    const [, payload] = String(credential || '').split('.');
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = Buffer.from(normalized, 'base64').toString('utf8');
+    const parsed = JSON.parse(json);
+    return parsed?.aud || null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const getAuthFailureHint = (error, credential) => {
   const message = (error?.message || '').toLowerCase();
 
   if (message.includes('audience')) {
-    return 'Google client ID mismatch. Ensure backend GOOGLE_CLIENT_ID equals frontend REACT_APP_GOOGLE_CLIENT_ID.';
+    const tokenAudience = decodeAudienceFromCredential(credential);
+    const configured = GOOGLE_CLIENT_IDS.join(', ') || 'none';
+    return `Google client ID mismatch. Token aud: ${tokenAudience || 'unknown'}. Configured backend audiences: ${configured}. Ensure frontend REACT_APP_GOOGLE_CLIENT_ID matches one configured backend ID.`;
   }
 
   if (message.includes('token used too early') || message.includes('expired')) {
@@ -24,14 +50,17 @@ const googleLogin = async (req, res) => {
   try {
     const { credential } = req.body;
 
-    if (!credential || !GOOGLE_CLIENT_ID) {
-      return res.status(400).json({ error: 'Missing credential or GOOGLE_CLIENT_ID not configured' });
+    if (!credential || GOOGLE_CLIENT_IDS.length === 0) {
+      return res.status(400).json({
+        error: 'Missing credential or GOOGLE_CLIENT_ID not configured',
+        hint: 'Set GOOGLE_CLIENT_ID (or comma-separated GOOGLE_CLIENT_IDS) on backend. It must match frontend REACT_APP_GOOGLE_CLIENT_ID.',
+      });
     }
 
     // Verify the ID token
     const ticket = await client.verifyIdToken({
       idToken: credential,
-      audience: GOOGLE_CLIENT_ID,
+      audience: GOOGLE_CLIENT_IDS,
     });
 
     const payload = ticket.getPayload();
@@ -77,7 +106,7 @@ const googleLogin = async (req, res) => {
     console.error('Google login error:', err);
     res.status(401).json({
       error: 'Google authentication failed',
-      hint: getAuthFailureHint(err),
+      hint: getAuthFailureHint(err, req.body?.credential),
     });
   }
 };
