@@ -49,7 +49,7 @@ export const apiFetch = async (endpoint, options = {}) => {
   }
 
   if (!response.ok) {
-    const message = data?.error || raw || `HTTP ${response.status}`;
+    const message = [data?.error, data?.hint].filter(Boolean).join(' - ') || raw || `HTTP ${response.status}`;
     throw new Error(message);
   }
 
