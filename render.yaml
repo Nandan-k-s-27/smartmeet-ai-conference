@@ -20,6 +20,8 @@ services:
         sync: false  # User must provide this
       - key: GEMINI_API_KEY
         sync: false  # User must provide this
+      - key: GOOGLE_CLIENT_ID
+        sync: false  # User must provide this (must match frontend REACT_APP_GOOGLE_CLIENT_ID)
       - key: ALLOWED_ORIGINS
         sync: false  # User must provide this (e.g., https://your-frontend.vercel.app)
     autoDeploy: true

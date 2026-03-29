@@ -93,7 +93,7 @@ const MeetingHomePage = () => {
       return;
     }
 
-    await logout();
+    await logout({ revokeEmail: user?.email });
     setShowAccountMenu(false);
     setPendingAction('switch');
     setGoogleLoginRenderKey((prev) => prev + 1);
@@ -147,7 +147,7 @@ const MeetingHomePage = () => {
   };
 
   const handleLogout = async () => {
-    await logout();
+    await logout({ revokeEmail: user?.email });
     setPendingAction(null);
     setPendingJoinCode('');
     setGoogleLoginRenderKey((prev) => prev + 1);
@@ -326,6 +326,7 @@ const MeetingHomePage = () => {
             text="signin_with"
             shape="pill"
             width="310"
+            auto_select={false}
             useOneTap={false}
           />
           <p className="auth-prompt-note">Use your Google account to create or join meetings.</p>

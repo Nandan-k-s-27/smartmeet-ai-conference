@@ -5,6 +5,20 @@ const { signAccessToken, signRefreshToken, hashToken, verifyHashedToken, setAuth
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
+const getAuthFailureHint = (error) => {
+  const message = (error?.message || '').toLowerCase();
+
+  if (message.includes('audience')) {
+    return 'Google client ID mismatch. Ensure backend GOOGLE_CLIENT_ID equals frontend REACT_APP_GOOGLE_CLIENT_ID.';
+  }
+
+  if (message.includes('token used too early') || message.includes('expired')) {
+    return 'Google token is expired or invalid. Retry sign-in and ensure device time is correct.';
+  }
+
+  return 'Google token verification failed. Check OAuth client setup and allowed origins.';
+};
+
 // Google OAuth verification
 const googleLogin = async (req, res) => {
   try {
@@ -61,7 +75,10 @@ const googleLogin = async (req, res) => {
     res.json({ user: { _id: user._id, name: user.name, email: user.email, avatar: user.avatar } });
   } catch (err) {
     console.error('Google login error:', err);
-    res.status(401).json({ error: 'Google authentication failed' });
+    res.status(401).json({
+      error: 'Google authentication failed',
+      hint: getAuthFailureHint(err),
+    });
   }
 };
 

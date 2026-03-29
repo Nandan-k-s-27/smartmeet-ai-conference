@@ -70,12 +70,27 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const revokeGoogleAccountAccess = useCallback(async (email) => {
+    if (!email || !window.google?.accounts?.id?.revoke) {
+      return;
+    }
+
+    await new Promise((resolve) => {
+      try {
+        window.google.accounts.id.revoke(email, () => resolve());
+      } catch (error) {
+        resolve();
+      }
+    });
+  }, []);
+
   // Logout
-  const logout = useCallback(async () => {
+  const logout = useCallback(async ({ revokeEmail } = {}) => {
     await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
+    await revokeGoogleAccountAccess(revokeEmail || user?.email);
     clearGoogleSessionHints();
     setUser(null);
-  }, [clearGoogleSessionHints]);
+  }, [clearGoogleSessionHints, revokeGoogleAccountAccess, user]);
 
   const value = useMemo(
     () => ({
@@ -87,8 +102,9 @@ export const AuthProvider = ({ children }) => {
       fetchMe,
       logout,
       clearGoogleSessionHints,
+      revokeGoogleAccountAccess,
     }),
-    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout, clearGoogleSessionHints]
+    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout, clearGoogleSessionHints, revokeGoogleAccountAccess]
   );
 
   return (
