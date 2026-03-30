@@ -3,6 +3,7 @@ const passport = require('passport');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { requireAuth } = require('../middleware/authMiddleware');
+const { getFrontendUrl } = require('../utils/passportAuth');
 
 // Initiate Google OAuth flow
 // Frontend redirects here to start login process
@@ -11,9 +12,17 @@ router.get(
   (req, res, next) => {
     // Support prompt=select_account for account switching
     const prompt = req.query.prompt === 'select_account' ? 'select_account' : undefined;
+
+    const frontendUrl = String(req.query.frontend_url || '').trim();
+    const statePayload = frontendUrl ? { frontend_url: frontendUrl } : null;
+    const state = statePayload
+      ? Buffer.from(JSON.stringify(statePayload), 'utf8').toString('base64url')
+      : undefined;
+
     passport.authenticate('google', {
       scope: ['profile', 'email'],
       prompt,
+      state,
       session: false,
     })(req, res, next);
   }
@@ -40,7 +49,15 @@ router.post('/google', (req, res) => {
 
 // Failed auth redirect
 router.get('/failed', (req, res) => {
-  res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=auth_failed`);
+  const frontendBase = getFrontendUrl();
+  if (!frontendBase) {
+    return res.status(500).json({
+      error: 'FRONTEND_URL is not configured on backend',
+      hint: 'Set FRONTEND_URL (or ALLOWED_ORIGINS) in Render environment variables.',
+    });
+  }
+
+  return res.redirect(`${frontendBase}/login?error=auth_failed`);
 });
 
 // GET /api/auth/me - Get current authenticated user

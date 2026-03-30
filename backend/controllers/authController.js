@@ -1,14 +1,45 @@
 const User = require('../models/User');
 const { createAuthToken, verifyAuthToken, getFrontendUrl } = require('../utils/passportAuth');
 
+const parseFrontendUrlFromState = (stateValue) => {
+  try {
+    const raw = String(stateValue || '').trim();
+    if (!raw) return null;
+
+    const decoded = Buffer.from(raw, 'base64url').toString('utf8');
+    const parsed = JSON.parse(decoded);
+    const candidate = String(parsed?.frontend_url || '').trim();
+    if (!candidate) return null;
+
+    const url = new URL(candidate);
+    if (!['http:', 'https:'].includes(url.protocol)) return null;
+    return `${url.protocol}//${url.host}`;
+  } catch (error) {
+    return null;
+  }
+};
+
+const getFrontendRedirectBase = (req) => {
+  const stateFrontendUrl = parseFrontendUrlFromState(req?.query?.state);
+  return stateFrontendUrl || getFrontendUrl();
+};
+
 /**
  * Google OAuth callback handler
  * Called after successful Passport authentication
  */
 const googleCallback = async (req, res) => {
   try {
+    const frontendBase = getFrontendRedirectBase(req);
+    if (!frontendBase) {
+      return res.status(500).json({
+        error: 'FRONTEND_URL is not configured on backend',
+        hint: 'Set FRONTEND_URL (or ALLOWED_ORIGINS) in Render environment variables.',
+      });
+    }
+
     if (!req.user) {
-      return res.redirect(`${getFrontendUrl()}/login?error=auth_failed`);
+      return res.redirect(`${frontendBase}/login?error=auth_failed`);
     }
 
     // Create JWT token for authenticated user
@@ -25,11 +56,15 @@ const googleCallback = async (req, res) => {
     });
 
     // Redirect to frontend with token in URL (frontend will read and verify)
-    const redirectUrl = `${getFrontendUrl()}/?auth_token=${token}`;
+    const redirectUrl = `${frontendBase}/?auth_token=${token}`;
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('[auth] Callback error:', error);
-    res.redirect(`${getFrontendUrl()}/login?error=callback_failed`);
+    const fallbackFrontend = getFrontendRedirectBase(req);
+    if (!fallbackFrontend) {
+      return res.status(500).json({ error: 'OAuth callback failed and frontend redirect URL is unavailable' });
+    }
+    res.redirect(`${fallbackFrontend}/login?error=callback_failed`);
   }
 };
 

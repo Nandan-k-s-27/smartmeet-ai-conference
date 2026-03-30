@@ -130,8 +130,27 @@ function verifyJWT(req, res, next) {
  * Get frontend redirect URL for OAuth callback
  */
 function getFrontendUrl() {
-  const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
-  return frontend;
+  const normalize = (value) => String(value || '').trim().replace(/\/+$/, '');
+
+  const fromFrontendUrl = normalize(process.env.FRONTEND_URL);
+  if (fromFrontendUrl) {
+    return fromFrontendUrl;
+  }
+
+  const fromAllowedOrigins = String(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((value) => normalize(value))
+    .filter(Boolean)[0];
+
+  if (fromAllowedOrigins) {
+    return fromAllowedOrigins;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return null;
+  }
+
+  return 'http://localhost:3000';
 }
 
 module.exports = {

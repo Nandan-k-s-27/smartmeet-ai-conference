@@ -22,6 +22,16 @@ services:
         sync: false  # User must provide this
       - key: GOOGLE_CLIENT_ID
         sync: false  # User must provide this (must match frontend REACT_APP_GOOGLE_CLIENT_ID)
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false  # User must provide this
+      - key: GOOGLE_CALLBACK_URL
+        sync: false  # Example: https://your-backend.onrender.com/api/auth/google/callback
+      - key: FRONTEND_URL
+        sync: false  # Example: https://your-frontend.vercel.app
       - key: ALLOWED_ORIGINS
         sync: false  # User must provide this (e.g., https://your-frontend.vercel.app)
+      - key: JWT_SECRET
+        sync: false  # User must provide this (min 32 chars)
+      - key: SESSION_SECRET
+        sync: false  # User must provide this (min 32 chars)
     autoDeploy: true

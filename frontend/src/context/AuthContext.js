@@ -75,11 +75,13 @@ export const AuthProvider = ({ children }) => {
   // Initiate Google OAuth login by redirecting to backend
   const loginWithGoogle = useCallback((prompt = undefined) => {
     const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-    let authUrl = `${backendUrl}/api/auth/google`;
-    
+    const params = new URLSearchParams();
+    params.set('frontend_url', window.location.origin);
     if (prompt === 'select_account') {
-      authUrl += '?prompt=select_account';
+      params.set('prompt', 'select_account');
     }
+
+    const authUrl = `${backendUrl}/api/auth/google?${params.toString()}`;
 
     // Redirect to backend OAuth endpoint
     window.location.href = authUrl;
