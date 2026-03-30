@@ -74,7 +74,11 @@ export const AuthProvider = ({ children }) => {
 
   // Initiate Google OAuth login by redirecting to backend
   const loginWithGoogle = useCallback((prompt = undefined) => {
-    const backendUrl = getApiBase();
+    let backendUrl = getApiBase();
+    if (!/^https?:\/\//i.test(backendUrl)) {
+      backendUrl = 'https://smartmeet-backend.onrender.com';
+    }
+
     const params = new URLSearchParams();
     params.set('frontend_url', window.location.origin);
     if (prompt === 'select_account') {

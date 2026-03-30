@@ -1,4 +1,14 @@
-const normalizeBaseUrl = (value) => String(value || '').trim().replace(/\/+$/, '');
+const normalizeBaseUrl = (value) => {
+  const normalized = String(value || '').trim().replace(/\/+$/, '');
+  if (!normalized) return '';
+
+  const lowered = normalized.toLowerCase();
+  if (lowered === 'undefined' || lowered === 'null') {
+    return '';
+  }
+
+  return normalized;
+};
 
 // Production fallback for this deployed app when env vars are missing at build time.
 const DEFAULT_PRODUCTION_BACKEND_URL = 'https://smartmeet-backend.onrender.com';
