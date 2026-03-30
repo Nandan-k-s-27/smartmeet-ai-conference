@@ -49,10 +49,22 @@ function initializePassportGoogle() {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          const email = profile.emails?.[0]?.value;
-          const name = profile.displayName;
-          const googleId = profile.id;
+          const googleId = String(profile?.id || '').trim();
+          const email = String(profile?.emails?.[0]?.value || profile?._json?.email || '').trim().toLowerCase();
+          const name = String(
+            profile?.displayName ||
+            profile?._json?.name ||
+            (email ? email.split('@')[0] : 'User')
+          ).trim();
           const picture = profile.photos?.[0]?.value;
+
+          if (!googleId) {
+            return done(null, false, { message: 'Missing Google account ID' });
+          }
+
+          if (!email) {
+            return done(null, false, { message: 'Google account email is unavailable' });
+          }
 
           // Find existing user by googleId first
           let user = await User.findOne({ googleId });
@@ -64,21 +76,31 @@ function initializePassportGoogle() {
 
           if (!user) {
             // Create new user
-            user = new User({
-              name,
-              email,
-              googleId,
-              avatar: picture,
-            });
-            await user.save();
+            try {
+              user = new User({
+                name,
+                email,
+                googleId,
+                avatar: picture,
+              });
+              await user.save();
+            } catch (saveError) {
+              // Handle race conditions where same email/googleId was inserted concurrently.
+              if (saveError?.code === 11000) {
+                user = await User.findOne({ $or: [{ googleId }, { email }] });
+                if (!user) {
+                  throw saveError;
+                }
+              } else {
+                throw saveError;
+              }
+            }
           } else {
             // Link/refresh OAuth profile on existing account
             user.googleId = googleId;
             user.avatar = picture;
-            user.name = name;
-            if (!user.email && email) {
-              user.email = email;
-            }
+            user.name = name || user.name;
+            user.email = user.email || email;
             await user.save();
           }
 
