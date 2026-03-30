@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
-import { googleLogout } from '@react-oauth/google';
 import { apiFetch, getApiBase } from '../utils/api';
 
 const AuthContext = createContext(null);
@@ -107,29 +106,18 @@ export const AuthProvider = ({ children }) => {
   // Clear Google session hints for account switching
   const clearGoogleSessionHints = useCallback(() => {
     try {
-      googleLogout();
+      if (window.google?.accounts?.id?.disableAutoSelect) {
+        window.google.accounts.id.disableAutoSelect();
+      }
     } catch (error) {
-      // Ignore provider-side failures
-    }
-
-    if (window.google?.accounts?.id?.disableAutoSelect) {
-      window.google.accounts.id.disableAutoSelect();
+      // Ignore Google SDK cleanup issues.
     }
   }, []);
 
   // Revoke Google account access
   const revokeGoogleAccountAccess = useCallback(async (email) => {
-    if (!email || !window.google?.accounts?.id?.revoke) {
-      return;
-    }
-
-    await new Promise((resolve) => {
-      try {
-        window.google.accounts.id.revoke(email, () => resolve());
-      } catch (error) {
-        resolve();
-      }
-    });
+    // No-op for backend redirect OAuth flow.
+    return;
   }, []);
 
   // Logout
@@ -143,10 +131,8 @@ export const AuthProvider = ({ children }) => {
     // Clear Google session hints
     clearGoogleSessionHints();
 
-    // Optionally revoke account access
-    if (revokeEmail || user?.email) {
-      await revokeGoogleAccountAccess(revokeEmail || user?.email);
-    }
+    // Keep parameter for backwards compatibility; no SDK revoke needed.
+    void revokeEmail;
 
     setUser(null);
 
@@ -154,7 +140,7 @@ export const AuthProvider = ({ children }) => {
     if (switchAccount) {
       loginWithGoogle('select_account');
     }
-  }, [user, clearGoogleSessionHints, revokeGoogleAccountAccess, loginWithGoogle]);
+  }, [clearGoogleSessionHints, loginWithGoogle]);
 
   const value = useMemo(
     () => ({
