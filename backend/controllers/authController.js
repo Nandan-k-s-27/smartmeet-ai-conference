@@ -1,209 +1,182 @@
-const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
-const { signAccessToken, signRefreshToken, hashToken, verifyHashedToken, setAuthCookies, clearAuthCookies } = require('../utils/tokenUtils');
+const { createAuthToken, verifyAuthToken, getFrontendUrl, JWT_SECRET } = require('../utils/passportAuth');
+const { verifyAccessToken } = require('../utils/tokenUtils');
 
-const parseGoogleClientIds = () => {
-  const primary = String(process.env.GOOGLE_CLIENT_ID || '').trim();
-  const extras = String(process.env.GOOGLE_CLIENT_IDS || '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  const merged = [primary, ...extras].filter(Boolean);
-  return [...new Set(merged)];
-};
-
-const GOOGLE_CLIENT_IDS = parseGoogleClientIds();
-const client = new OAuth2Client(GOOGLE_CLIENT_IDS[0] || undefined);
-
-const decodeAudienceFromCredential = (credential) => {
+/**
+ * Google OAuth callback handler
+ * Called after successful Passport authentication
+ */
+const googleCallback = async (req, res) => {
   try {
-    const [, payload] = String(credential || '').split('.');
-    if (!payload) return null;
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const json = Buffer.from(normalized, 'base64').toString('utf8');
-    const parsed = JSON.parse(json);
-    return parsed?.aud || null;
+    if (!req.user) {
+      return res.redirect(`${getFrontendUrl()}/login?error=auth_failed`);
+    }
+
+    // Create JWT token for authenticated user
+    const token = createAuthToken(req.user);
+
+    // Set auth token in secure HTTP-only cookie
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
+    });
+
+    // Redirect to frontend with token in URL (frontend will read and verify)
+    const redirectUrl = `${getFrontendUrl()}/?auth_token=${token}`;
+    res.redirect(redirectUrl);
   } catch (error) {
-    return null;
+    console.error('[auth] Callback error:', error);
+    res.redirect(`${getFrontendUrl()}/login?error=callback_failed`);
   }
 };
 
-const getAuthFailureHint = (error, credential) => {
-  const message = (error?.message || '').toLowerCase();
-
-  if (message.includes('audience')) {
-    const tokenAudience = decodeAudienceFromCredential(credential);
-    const configured = GOOGLE_CLIENT_IDS.join(', ') || 'none';
-    return `Google client ID mismatch. Token aud: ${tokenAudience || 'unknown'}. Configured backend audiences: ${configured}. Ensure frontend REACT_APP_GOOGLE_CLIENT_ID matches one configured backend ID.`;
-  }
-
-  if (message.includes('token used too early') || message.includes('expired')) {
-    return 'Google token is expired or invalid. Retry sign-in and ensure device time is correct.';
-  }
-
-  return 'Google token verification failed. Check OAuth client setup and allowed origins.';
-};
-
-// Google OAuth verification
-const googleLogin = async (req, res) => {
+/**
+ * Get current authenticated user from JWT token
+ */
+const getCurrentUser = async (req, res) => {
   try {
-    const { credential } = req.body;
-
-    if (!credential || GOOGLE_CLIENT_IDS.length === 0) {
-      return res.status(400).json({
-        error: 'Missing credential or GOOGLE_CLIENT_ID not configured',
-        hint: 'Set GOOGLE_CLIENT_ID (or comma-separated GOOGLE_CLIENT_IDS) on backend. It must match frontend REACT_APP_GOOGLE_CLIENT_ID.',
-      });
-    }
-
-    // Verify the ID token
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: GOOGLE_CLIENT_IDS,
-    });
-
-    const payload = ticket.getPayload();
-    const { sub: googleId, email, name, picture } = payload;
-
-    // Find existing user by googleId first, then by email for account linking.
-    let user = await User.findOne({ googleId });
+    // req.user is set by authMiddleware (JWT verification)
+    const user = await User.findById(req.user.id);
+    
     if (!user) {
-      user = await User.findOne({ email });
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    if (!user) {
-      // Create new user
-      user = new User({
-        name,
-        email,
-        googleId,
-        avatar: picture,
-      });
-      await user.save();
-    } else {
-      // Link/refresh OAuth profile on existing account.
-      user.googleId = googleId;
-      user.avatar = picture;
-      user.name = name;
-      await user.save();
-    }
-
-    // Issue tokens
-    const accessToken = signAccessToken(user._id.toString());
-    const refreshToken = signRefreshToken(user._id.toString());
-    const refreshTokenHash = hashToken(refreshToken);
-
-    // Store refresh token hash in DB
-    user.refreshTokenHash = refreshTokenHash;
-    await user.save();
-
-    // Set cookies
-    setAuthCookies(res, accessToken, refreshToken);
-
-    res.json({ user: { _id: user._id, name: user.name, email: user.email, avatar: user.avatar } });
-  } catch (err) {
-    console.error('Google login error:', err);
-    res.status(401).json({
-      error: 'Google authentication failed',
-      hint: getAuthFailureHint(err, req.body?.credential),
-    });
-  }
-};
-
-// Get current authenticated user
-const getCurrentUser = (req, res) => {
-  try {
     res.json({
       user: {
-        _id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        avatar: req.user.avatar,
-      },
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+        googleId: user.googleId,
+      }
     });
-  } catch (err) {
-    console.error('Get current user error:', err);
-    res.status(500).json({ error: 'Failed to get user info' });
+  } catch (error) {
+    console.error('[auth] Get current user error:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
 };
 
-// Refresh session
+/**
+ * Refresh session / validate current token
+ */
 const refreshSession = async (req, res) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
 
-    if (!refreshToken) {
-      return res.status(401).json({ error: 'No refresh token' });
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
     }
 
-    const tokenUtils = require('../utils/tokenUtils');
-    const decoded = tokenUtils.verifyRefreshToken(refreshToken);
-    if (!decoded?.userId) {
-      clearAuthCookies(res);
-      return res.status(401).json({ error: 'Refresh token invalid' });
+    // Verify existing token
+    const decoded = verifyAuthToken(token);
+    if (!decoded) {
+      return res.status(401).json({ error: 'Token expired or invalid' });
     }
 
-    const user = await User.findById(decoded.userId);
-    if (!user || !user.refreshTokenHash) {
-      clearAuthCookies(res);
-      return res.status(401).json({ error: 'Invalid refresh token' });
+    // If token is still valid, issue a fresh one to extend session
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    // Verify refresh token hash for this exact user session
-    if (!verifyHashedToken(refreshToken, user.refreshTokenHash)) {
-      clearAuthCookies(res);
-      return res.status(401).json({ error: 'Refresh token invalid' });
-    }
+    const newToken = createAuthToken(user);
 
-    // Issue new access token
-    const newAccessToken = signAccessToken(user._id.toString());
-
-    // Optionally rotate refresh token (optional, for enhanced security)
-    const newRefreshToken = signRefreshToken(user._id.toString());
-    user.refreshTokenHash = hashToken(newRefreshToken);
-    await user.save();
-
-    setAuthCookies(res, newAccessToken, newRefreshToken);
+    // Update cookie with new token
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('auth_token', newToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
 
     res.json({
       user: {
-        _id: user._id,
-        name: user.name,
+        id: user._id,
         email: user.email,
+        name: user.name,
         avatar: user.avatar,
-      },
+      }
     });
-  } catch (err) {
-    console.error('Refresh session error:', err);
-    clearAuthCookies(res);
-    res.status(401).json({ error: 'Session refresh failed' });
+  } catch (error) {
+    console.error('[auth] Refresh session error:', error);
+    res.status(500).json({ error: 'Failed to refresh session' });
   }
 };
 
-// Logout
-const logout = async (req, res) => {
+/**
+ * Check authentication status
+ */
+const getAuthStatus = async (req, res) => {
   try {
-    const refreshToken = req.cookies?.refreshToken;
-    if (refreshToken) {
-      const tokenUtils = require('../utils/tokenUtils');
-      const decoded = tokenUtils.verifyRefreshToken(refreshToken);
-      if (decoded?.userId) {
-        await User.findByIdAndUpdate(decoded.userId, { refreshTokenHash: null }).catch(() => null);
-      }
+    const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      return res.json({ authenticated: false });
     }
 
-    clearAuthCookies(res);
+    const decoded = verifyAuthToken(token);
+    if (!decoded) {
+      return res.json({ authenticated: false });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.json({ authenticated: false });
+    }
+
+    res.json({
+      authenticated: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+      }
+    });
+  } catch (error) {
+    console.error('[auth] Check status error:', error);
+    res.json({ authenticated: false });
+  }
+};
+
+/**
+ * Logout - clear auth token
+ */
+const logout = async (req, res) => {
+  try {
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Clear the auth token cookie
+    res.clearCookie('auth_token', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      path: '/',
+    });
+
+    // Destroy session if exists
+    req.session?.destroy?.((err) => {
+      if (err) console.error('[auth] Session destroy error:', err);
+    });
+
     res.json({ success: true });
-  } catch (err) {
-    console.error('Logout error:', err);
-    res.status(500).json({ error: 'Logout failed' });
+  } catch (error) {
+    console.error('[auth] Logout error:', error);
+    res.status(500).json({ error: 'Failed to logout' });
   }
 };
 
 module.exports = {
-  googleLogin,
+  googleCallback,
   getCurrentUser,
   refreshSession,
+  getAuthStatus,
   logout,
 };

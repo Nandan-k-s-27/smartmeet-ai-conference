@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { GoogleLogin } from '@react-oauth/google';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../utils/api';
@@ -11,11 +10,9 @@ const MeetingHomePage = () => {
   const { user, logout, isAuthenticated, loginWithGoogle } = useAuth();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isSigningIn, setIsSigningIn] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [googleLoginRenderKey, setGoogleLoginRenderKey] = useState(0);
   const [joinInput, setJoinInput] = useState('');
   const [pendingAction, setPendingAction] = useState(null);
   const [pendingJoinCode, setPendingJoinCode] = useState('');
@@ -27,8 +24,6 @@ const MeetingHomePage = () => {
   });
   const [error, setError] = useState('');
   const accountMenuRef = useRef(null);
-
-  const hasGoogleClientId = Boolean((process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim());
 
   const showError = (message) => {
     setError(message);
@@ -77,27 +72,14 @@ const MeetingHomePage = () => {
       return true;
     }
 
-    if (!hasGoogleClientId) {
-      showError('Google sign-in is not configured. Please set REACT_APP_GOOGLE_CLIENT_ID.');
-      return false;
-    }
-
     setPendingAction(action);
     setShowAuthPrompt(true);
     return false;
   };
 
   const handleSwitchAccount = async () => {
-    if (!hasGoogleClientId) {
-      showError('Google sign-in is not configured. Please set REACT_APP_GOOGLE_CLIENT_ID.');
-      return;
-    }
-
-    await logout({ revokeEmail: user?.email });
+    await logout({ switchAccount: true });
     setShowAccountMenu(false);
-    setPendingAction('switch');
-    setGoogleLoginRenderKey((prev) => prev + 1);
-    setShowAuthPrompt(true);
   };
 
   const normalizeMeetingInput = (rawValue) => {
@@ -150,7 +132,6 @@ const MeetingHomePage = () => {
     await logout({ revokeEmail: user?.email });
     setPendingAction(null);
     setPendingJoinCode('');
-    setGoogleLoginRenderKey((prev) => prev + 1);
     setShowAuthPrompt(false);
     setShowAccountMenu(false);
     setShowScheduleModal(false);
@@ -198,6 +179,62 @@ const MeetingHomePage = () => {
       const data = await apiFetch('/api/meetings/create', {
         method: 'POST',
         body: JSON.stringify({ title: scheduleDraft.title || `${user?.name || 'Guest'}'s Scheduled Meeting` }),
+      });
+
+      const calendarUrl = buildGoogleCalendarUrl({
+        title: scheduleDraft.title || `${user?.name || 'Guest'}'s Meeting`,
+        startAt: scheduleDraft.startAt,
+        durationMinutes: scheduleDraft.durationMinutes,
+        description: `${scheduleDraft.description || ''}\n\nSmartMeet Meeting: ${data.meetingId}`,
+        meetingId: data.meetingId,
+      });
+
+      window.open(calendarUrl, '_blank', 'width=800,height=600');
+      setShowScheduleModal(false);
+      setScheduleDraft({
+        title: 'Scheduled SmartMeet Meeting',
+        startAt: getDefaultScheduleTime(),
+        durationMinutes: 30,
+        description: '',
+      });
+    } catch (err) {
+      showError(err.message || 'Failed to schedule meeting');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAuthPromptAction = () => {
+    // Redirect to Google OAuth flow
+    loginWithGoogle(pendingAction === 'switch' ? 'select_account' : undefined);
+  };
+
+  useEffect(() => {
+    setScheduleDraft((prev) => {
+      if (prev.startAt) {
+        return prev;
+      }
+      return {
+        ...prev,
+        startAt: getDefaultScheduleTime(),
+      };
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!showAccountMenu || !accountMenuRef.current) {
+        return;
+      }
+
+      if (!accountMenuRef.current.contains(event.target)) {
+        setShowAccountMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAccountMenu]);
       });
 
       const calendarUrl = buildGoogleCalendarUrl({

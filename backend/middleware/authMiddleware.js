@@ -1,10 +1,10 @@
-const { verifyAccessToken } = require('../utils/tokenUtils');
+const { verifyAuthToken } = require('../utils/passportAuth');
 const User = require('../models/User');
 
 const requireAuth = async (req, res, next) => {
   try {
-    // Get access token from cookie or Authorization header
-    let token = req.cookies.accessToken;
+    // Get auth token from cookie or Authorization header
+    let token = req.cookies?.auth_token;
     
     if (!token && req.headers.authorization) {
       const parts = req.headers.authorization.split(' ');
@@ -17,21 +17,17 @@ const requireAuth = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: No token' });
     }
 
-    const decoded = verifyAccessToken(token);
+    const decoded = verifyAuthToken(token);
     if (!decoded) {
-      return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+      return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
     }
 
-    // Fetch user from DB to populate user object
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return res.status(401).json({ error: 'Unauthorized: User not found' });
-    }
-
-    req.user = user;
+    // Attach decoded user info to request
+    // decoded contains: { id, googleId, email, name, picture }
+    req.user = decoded;
     next();
   } catch (err) {
-    console.error('Auth middleware error:', err);
+    console.error('[authMiddleware] Auth error:', err);
     return res.status(401).json({ error: 'Unauthorized' });
   }
 };

@@ -6,18 +6,24 @@ const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const passport = require('passport');
 const connectDB = require('./config/db');
 const meetingController = require('./controllers/meetingController');
 const summaryController = require('./controllers/summaryController');
 const socketHandler = require('./socket/socketHandler');
 const { requireAuth } = require('./middleware/authMiddleware');
 const authRoutes = require('./routes/authRoutes');
+const { initializePassportGoogle } = require('./utils/passportAuth');
 
 const app = express();
 const server = http.createServer(app);
 
 // Environment
 const isProduction = process.env.NODE_ENV === 'production';
+
+// Initialize Passport.js for Google OAuth
+initializePassportGoogle();
 
 // Needed behind reverse proxies (Render/NGINX) for secure cookie behavior.
 app.set('trust proxy', 1);
@@ -149,6 +155,25 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Session middleware for Passport
+const sessionOptions = {
+  secret: process.env.SESSION_SECRET || process.env.JWT_ACCESS_SECRET || 'dev-session-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: isProduction, // HTTPS only in production
+    httpOnly: true,
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+};
+
+app.use(session(sessionOptions));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Handle preflight OPTIONS requests
 app.options('*', cors(corsOptions));

@@ -8,6 +8,23 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check authentication status
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const response = await apiFetch('/api/auth/status', { method: 'GET' });
+      if (response.authenticated && response.user) {
+        setUser(response.user);
+        return response.user;
+      }
+      setUser(null);
+      return null;
+    } catch (error) {
+      console.error('[AuthContext] Error checking auth status:', error);
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   // Fetch current user
   const fetchMe = useCallback(async () => {
     try {
@@ -15,7 +32,7 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user || null);
       return data.user || null;
     } catch (error) {
-      // Access token may be expired. Attempt session refresh once.
+      // Token may be expired. Try to refresh.
       try {
         const refreshed = await apiFetch('/api/auth/refresh', { method: 'POST' });
         setUser(refreshed.user || null);
@@ -31,38 +48,62 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const bootstrapAuth = async () => {
       try {
-        await fetchMe();
+        // Check if auth_token is in URL (from OAuth callback)
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenFromUrl = urlParams.get('auth_token');
+
+        if (tokenFromUrl) {
+          // Token from OAuth callback is passed through, but the real authentication
+          // is done via the cookie set by the backend callback
+          // Clear the URL to clean up
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Check current auth status
+        await checkAuthStatus();
+      } catch (error) {
+        console.error('[AuthContext] Bootstrap error:', error);
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
 
     bootstrapAuth();
-  }, [fetchMe]);
+  }, [checkAuthStatus]);
 
-  // Google OAuth login
-  const loginWithGoogle = useCallback(async (credential) => {
-    const data = await apiFetch('/api/auth/google', {
-      method: 'POST',
-      body: JSON.stringify({ credential }),
-    });
-    setUser(data.user);
-    return data.user;
+  // Initiate Google OAuth login by redirecting to backend
+  const loginWithGoogle = useCallback((prompt = undefined) => {
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    let authUrl = `${backendUrl}/auth/google`;
+    
+    if (prompt === 'select_account') {
+      authUrl += '?prompt=select_account';
+    }
+
+    // Redirect to backend OAuth endpoint
+    window.location.href = authUrl;
   }, []);
 
   // Refresh session
   const refreshSession = useCallback(async () => {
-    const data = await apiFetch('/api/auth/refresh', { method: 'POST' });
-    setUser(data.user || null);
-    return data.user || null;
+    try {
+      const data = await apiFetch('/api/auth/refresh', { method: 'POST' });
+      setUser(data.user || null);
+      return data.user || null;
+    } catch (error) {
+      console.error('[AuthContext] Refresh error:', error);
+      setUser(null);
+      return null;
+    }
   }, []);
 
+  // Clear Google session hints for account switching
   const clearGoogleSessionHints = useCallback(() => {
-    // Clear Google Identity auto-select so users can choose another account.
     try {
       googleLogout();
     } catch (error) {
-      // Ignore provider-side sign-out failures; app logout still proceeds.
+      // Ignore provider-side failures
     }
 
     if (window.google?.accounts?.id?.disableAutoSelect) {
@@ -70,6 +111,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Revoke Google account access
   const revokeGoogleAccountAccess = useCallback(async (email) => {
     if (!email || !window.google?.accounts?.id?.revoke) {
       return;
@@ -85,12 +127,28 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Logout
-  const logout = useCallback(async ({ revokeEmail } = {}) => {
-    await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
-    await revokeGoogleAccountAccess(revokeEmail || user?.email);
+  const logout = useCallback(async ({ revokeEmail, switchAccount } = {}) => {
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
+    } catch (error) {
+      console.error('[AuthContext] Logout error:', error);
+    }
+
+    // Clear Google session hints
     clearGoogleSessionHints();
+
+    // Optionally revoke account access
+    if (revokeEmail || user?.email) {
+      await revokeGoogleAccountAccess(revokeEmail || user?.email);
+    }
+
     setUser(null);
-  }, [clearGoogleSessionHints, revokeGoogleAccountAccess, user]);
+
+    // If switching account, redirect to login with select_account prompt
+    if (switchAccount) {
+      loginWithGoogle('select_account');
+    }
+  }, [user, clearGoogleSessionHints, revokeGoogleAccountAccess, loginWithGoogle]);
 
   const value = useMemo(
     () => ({
@@ -101,10 +159,11 @@ export const AuthProvider = ({ children }) => {
       refreshSession,
       fetchMe,
       logout,
+      checkAuthStatus,
       clearGoogleSessionHints,
       revokeGoogleAccountAccess,
     }),
-    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout, clearGoogleSessionHints, revokeGoogleAccountAccess]
+    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout, checkAuthStatus, clearGoogleSessionHints, revokeGoogleAccountAccess]
   );
 
   return (
