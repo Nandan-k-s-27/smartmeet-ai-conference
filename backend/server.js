@@ -15,12 +15,15 @@ const socketHandler = require('./socket/socketHandler');
 const { requireAuth } = require('./middleware/authMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const { initializePassportGoogle } = require('./utils/passportAuth');
+const { validateEnv, getSessionSecret } = require('./config/validateEnv');
 
 const app = express();
 const server = http.createServer(app);
 
 // Environment
 const isProduction = process.env.NODE_ENV === 'production';
+
+validateEnv();
 
 // Initialize Passport.js for Google OAuth
 initializePassportGoogle();
@@ -152,13 +155,13 @@ const getRtcConfiguration = () => {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Session middleware for Passport
 const sessionOptions = {
-  secret: process.env.SESSION_SECRET || process.env.JWT_ACCESS_SECRET || 'dev-session-secret-change-in-production',
+  secret: getSessionSecret(),
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -226,8 +229,8 @@ app.get('/api/summary/meeting-data/:meetingId', summaryController.getMeetingData
 
 // Health Check endpoint
 app.get('/', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     service: 'SmartMeet API',
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development'
@@ -243,7 +246,7 @@ app.get('/health', (req, res) => {
     mongodb: mongoStatus,
     environment: process.env.NODE_ENV || 'development'
   };
-  
+
   const statusCode = mongoose.connection.readyState === 1 ? 200 : 503;
   res.status(statusCode).json(health);
 });

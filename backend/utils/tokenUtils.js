@@ -1,8 +1,23 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
-const ACCESS_TOKEN_SECRET = process.env.JWT_ACCESS_SECRET || 'dev-access-secret-change-in-production';
-const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-in-production';
+const isProduction = process.env.NODE_ENV === 'production';
+
+const resolveSecret = (envValue, label) => {
+  if (envValue) {
+    return envValue;
+  }
+
+  if (isProduction) {
+    throw new Error(`${label} must be configured in production`);
+  }
+
+  // Development-only fallback: random per process start to avoid predictable defaults.
+  return crypto.randomBytes(32).toString('hex');
+};
+
+const ACCESS_TOKEN_SECRET = resolveSecret(process.env.JWT_ACCESS_SECRET, 'JWT_ACCESS_SECRET');
+const REFRESH_TOKEN_SECRET = resolveSecret(process.env.JWT_REFRESH_SECRET, 'JWT_REFRESH_SECRET');
 const ACCESS_TOKEN_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '15m';
 const REFRESH_TOKEN_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '30d';
 const ACCESS_COOKIE_MAX_AGE_MS = Number(process.env.ACCESS_COOKIE_MAX_AGE_MS || 15 * 60 * 1000);

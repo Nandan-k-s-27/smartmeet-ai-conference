@@ -300,10 +300,7 @@ const MeetingHomePage = () => {
                 <button
                   type="button"
                   className="landing-signin-btn"
-                  onClick={() => {
-                    setPendingAction('signin');
-                    setShowAuthPrompt(true);
-                  }}
+                  onClick={() => loginWithGoogle()}
                 >
                   Sign in
                 </button>

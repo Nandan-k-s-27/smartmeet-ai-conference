@@ -5,6 +5,34 @@ const authController = require('../controllers/authController');
 const { requireAuth } = require('../middleware/authMiddleware');
 const { getFrontendUrl } = require('../utils/passportAuth');
 
+const normalizeOrigin = (value) => String(value || '').trim().replace(/\/+$/, '');
+
+const getAllowedOrigins = () => {
+  const configured = String(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((value) => normalizeOrigin(value))
+    .filter(Boolean);
+
+  const defaultFrontend = normalizeOrigin(getFrontendUrl());
+  if (defaultFrontend) {
+    configured.push(defaultFrontend);
+  }
+
+  return Array.from(new Set(configured));
+};
+
+const isAllowlistedFrontend = (candidate) => {
+  const normalized = normalizeOrigin(candidate);
+  if (!normalized) return false;
+
+  const allowed = getAllowedOrigins();
+  if (allowed.length === 0) {
+    return process.env.NODE_ENV !== 'production';
+  }
+
+  return allowed.includes(normalized);
+};
+
 const resolveFrontendBase = (req) => {
   try {
     const stateRaw = String(req.query?.state || '').trim();
@@ -17,7 +45,8 @@ const resolveFrontendBase = (req) => {
 
     const url = new URL(candidate);
     if (!['http:', 'https:'].includes(url.protocol)) return getFrontendUrl();
-    return `${url.protocol}//${url.host}`;
+    const origin = `${url.protocol}//${url.host}`;
+    return isAllowlistedFrontend(origin) ? origin : getFrontendUrl();
   } catch (error) {
     return getFrontendUrl();
   }
@@ -32,7 +61,20 @@ router.get(
     const prompt = req.query.prompt === 'select_account' ? 'select_account' : undefined;
 
     const frontendUrl = String(req.query.frontend_url || '').trim();
-    const statePayload = frontendUrl ? { frontend_url: frontendUrl } : null;
+    let statePayload = null;
+
+    if (frontendUrl) {
+      try {
+        const url = new URL(frontendUrl);
+        const origin = `${url.protocol}//${url.host}`;
+        if (isAllowlistedFrontend(origin)) {
+          statePayload = { frontend_url: origin };
+        }
+      } catch (error) {
+        statePayload = null;
+      }
+    }
+
     const state = statePayload
       ? Buffer.from(JSON.stringify(statePayload), 'utf8').toString('base64url')
       : undefined;

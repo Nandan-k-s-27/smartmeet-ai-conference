@@ -1,5 +1,4 @@
 const { verifyAuthToken } = require('../utils/passportAuth');
-const User = require('../models/User');
 
 const requireAuth = async (req, res, next) => {
   try {
@@ -9,7 +8,7 @@ const requireAuth = async (req, res, next) => {
     if (!token && req.headers.authorization) {
       const parts = req.headers.authorization.split(' ');
       if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
-        token = parts[1];
+        token = String(parts[1] || '').trim();
       }
     }
 

@@ -1,6 +1,34 @@
 const User = require('../models/User');
 const { createAuthToken, verifyAuthToken, getFrontendUrl } = require('../utils/passportAuth');
 
+const normalizeOrigin = (value) => String(value || '').trim().replace(/\/+$/, '');
+
+const getAllowedOrigins = () => {
+  const configured = String(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((value) => normalizeOrigin(value))
+    .filter(Boolean);
+
+  const defaultFrontend = normalizeOrigin(getFrontendUrl());
+  if (defaultFrontend) {
+    configured.push(defaultFrontend);
+  }
+
+  return Array.from(new Set(configured));
+};
+
+const isAllowlistedFrontend = (candidate) => {
+  const normalized = normalizeOrigin(candidate);
+  if (!normalized) return false;
+
+  const allowed = getAllowedOrigins();
+  if (allowed.length === 0) {
+    return process.env.NODE_ENV !== 'production';
+  }
+
+  return allowed.includes(normalized);
+};
+
 const parseFrontendUrlFromState = (stateValue) => {
   try {
     const raw = String(stateValue || '').trim();
@@ -13,7 +41,8 @@ const parseFrontendUrlFromState = (stateValue) => {
 
     const url = new URL(candidate);
     if (!['http:', 'https:'].includes(url.protocol)) return null;
-    return `${url.protocol}//${url.host}`;
+    const origin = `${url.protocol}//${url.host}`;
+    return isAllowlistedFrontend(origin) ? origin : null;
   } catch (error) {
     return null;
   }
