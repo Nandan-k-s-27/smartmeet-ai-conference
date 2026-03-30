@@ -11,21 +11,25 @@ const LoginRedirect = () => {
   return <Navigate to={`/${query}`} replace />;
 };
 
+import ErrorBoundary from './components/ErrorBoundary';
+
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<MeetingHomePage />} />
-      <Route path="/login" element={<LoginRedirect />} />
-      <Route
-        path="/meeting/:meetingId"
-        element={
-          <ProtectedRoute>
-            <MeetingRoomPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/" element={<MeetingHomePage />} />
+        <Route path="/login" element={<LoginRedirect />} />
+        <Route
+          path="/meeting/:meetingId"
+          element={
+            <ProtectedRoute>
+              <MeetingRoomPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }
 

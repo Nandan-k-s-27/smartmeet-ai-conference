@@ -248,7 +248,7 @@ const MeetingRoomPage = () => {
               meetingId={meetingId}
               username={normalizedUserName}
               userId={normalizedUserId}
-              avatar={user.avatar}
+              avatar={user?.avatar}
               isHost={isHost}
               setSocket={setVideoCallSocket}
               onError={(error) => setError(error)}
