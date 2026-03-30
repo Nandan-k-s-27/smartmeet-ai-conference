@@ -172,11 +172,17 @@ const sessionOptions = {
   }
 };
 
-app.use(session(sessionOptions));
+const usePassportSession = !isProduction;
+
+if (usePassportSession) {
+  app.use(session(sessionOptions));
+}
 
 // Initialize Passport
 app.use(passport.initialize());
-app.use(passport.session());
+if (usePassportSession) {
+  app.use(passport.session());
+}
 
 // Handle preflight OPTIONS requests
 app.options('*', cors(corsOptions));
