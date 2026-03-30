@@ -3,7 +3,9 @@ const MeetingModel = require('../models/Meeting');
 const meetingStore = require('../utils/meetingStore');
 
 const getAuthParticipant = (req) => {
-    const userId = String(req.user?._id || '');
+    // Auth middleware attaches JWT payload with `id`; keep backward compatibility with `_id`.
+    const rawUserId = req.user?.id || req.user?._id || req.user?.userId || '';
+    const userId = String(rawUserId || '').trim();
     const username = req.user?.name || req.user?.email || 'User';
     return { userId, username };
 };
@@ -12,6 +14,13 @@ exports.createMeeting = async (req, res) => {
     try {
         const { title } = req.body;
         const { userId: host, username: hostUsername } = getAuthParticipant(req);
+
+        if (!host) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized user'
+            });
+        }
 
         // Auto-generate meeting ID
         const meetingId = uuidv4().substring(0, 8).toUpperCase();
@@ -91,6 +100,13 @@ exports.joinMeeting = async (req, res) => {
         const { meetingId } = req.params;
         const { userId, username } = getAuthParticipant(req);
 
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized user'
+            });
+        }
+
         const meeting = await meetingStore.getMeeting(meetingId);
         if (!meeting || !meeting.isActive) {
             return res.status(404).json({
@@ -148,6 +164,13 @@ exports.leaveMeeting = async (req, res) => {
         const { meetingId } = req.params;
         const { userId } = getAuthParticipant(req);
 
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized user'
+            });
+        }
+
         const meeting = await meetingStore.getMeeting(meetingId);
         if (meeting) {
             meeting.removeParticipant(userId);
@@ -182,6 +205,13 @@ exports.endMeeting = async (req, res) => {
     try {
         const { meetingId } = req.params;
         const { userId } = getAuthParticipant(req);
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized user'
+            });
+        }
 
         const meeting = await meetingStore.getMeeting(meetingId);
         
