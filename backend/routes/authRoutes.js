@@ -23,11 +23,20 @@ router.get(
 router.get(
   '/google/callback',
   passport.authenticate('google', { 
-    failureRedirect: '/auth/failed',
+    failureRedirect: '/api/auth/failed',
     session: false 
   }),
   authController.googleCallback
 );
+
+// Backward compatibility: if an old frontend still POSTs credentials here,
+// return a clear message instead of generic 404.
+router.post('/google', (req, res) => {
+  res.status(405).json({
+    error: 'Google OAuth now uses redirect flow.',
+    hint: 'Use GET /api/auth/google to initiate login.',
+  });
+});
 
 // Failed auth redirect
 router.get('/failed', (req, res) => {

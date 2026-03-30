@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../utils/api';
 import { ThemeSwitch } from '../components/ui/theme-switch-button';
 
 const MeetingHomePage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, logout, isAuthenticated, loginWithGoogle } = useAuth();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +42,6 @@ const MeetingHomePage = () => {
         method: 'POST',
         body: JSON.stringify({ title: `${user?.name || 'Guest'}'s Meeting` }),
       });
-
       navigate(`/meeting/${data.meetingId}`);
     } catch (err) {
       showError(err.message || 'Failed to create meeting');
@@ -68,25 +66,15 @@ const MeetingHomePage = () => {
   );
 
   const requireAuthFor = (action) => {
-    if (isAuthenticated) {
-      return true;
-    }
-
+    if (isAuthenticated) return true;
     setPendingAction(action);
     setShowAuthPrompt(true);
     return false;
   };
 
-  const handleSwitchAccount = async () => {
-    await logout({ switchAccount: true });
-    setShowAccountMenu(false);
-  };
-
   const normalizeMeetingInput = (rawValue) => {
     const value = (rawValue || '').trim();
-    if (!value) {
-      return '';
-    }
+    if (!value) return '';
 
     try {
       const hasProtocol = /^https?:\/\//i.test(value);
@@ -106,9 +94,7 @@ const MeetingHomePage = () => {
   };
 
   const handleCreateInstantMeeting = async () => {
-    if (!requireAuthFor('create')) {
-      return;
-    }
+    if (!requireAuthFor('create')) return;
     await createMeeting();
   };
 
@@ -120,12 +106,13 @@ const MeetingHomePage = () => {
     }
 
     setPendingJoinCode(normalizedCode);
-
-    if (!requireAuthFor('join')) {
-      return;
-    }
-
+    if (!requireAuthFor('join')) return;
     await joinMeeting(normalizedCode);
+  };
+
+  const handleSwitchAccount = async () => {
+    await logout({ switchAccount: true });
+    setShowAccountMenu(false);
   };
 
   const handleLogout = async () => {
@@ -139,9 +126,7 @@ const MeetingHomePage = () => {
   };
 
   const handleOpenScheduleModal = () => {
-    if (!requireAuthFor('schedule')) {
-      return;
-    }
+    if (!requireAuthFor('schedule')) return;
     setShowScheduleModal(true);
   };
 
@@ -189,7 +174,7 @@ const MeetingHomePage = () => {
         meetingId: data.meetingId,
       });
 
-      window.open(calendarUrl, '_blank', 'width=800,height=600');
+      window.open(calendarUrl, '_blank', 'noopener,noreferrer');
       setShowScheduleModal(false);
       setScheduleDraft({
         title: 'Scheduled SmartMeet Meeting',
@@ -205,127 +190,19 @@ const MeetingHomePage = () => {
   };
 
   const handleAuthPromptAction = () => {
-    // Redirect to Google OAuth flow
     loginWithGoogle(pendingAction === 'switch' ? 'select_account' : undefined);
   };
 
   useEffect(() => {
     setScheduleDraft((prev) => {
-      if (prev.startAt) {
-        return prev;
-      }
-      return {
-        ...prev,
-        startAt: getDefaultScheduleTime(),
-      };
+      if (prev.startAt) return prev;
+      return { ...prev, startAt: getDefaultScheduleTime() };
     });
   }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!showAccountMenu || !accountMenuRef.current) {
-        return;
-      }
-
-      if (!accountMenuRef.current.contains(event.target)) {
-        setShowAccountMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAccountMenu]);
-      });
-
-      const calendarUrl = buildGoogleCalendarUrl({
-        title: scheduleDraft.title || 'Scheduled SmartMeet Meeting',
-        startAt: scheduleDraft.startAt,
-        durationMinutes: scheduleDraft.durationMinutes,
-        description: scheduleDraft.description,
-        meetingId: data.meetingId,
-      });
-
-      window.open(calendarUrl, '_blank', 'noopener,noreferrer');
-      setShowScheduleModal(false);
-    } catch (err) {
-      showError(err.message || 'Failed to schedule meeting');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSuccess = useCallback(
-    async (credentialResponse) => {
-      try {
-        setError('');
-        setIsSigningIn(true);
-
-        if (!credentialResponse?.credential) {
-          throw new Error('Google authentication failed');
-        }
-
-        await loginWithGoogle(credentialResponse.credential);
-        setShowAuthPrompt(false);
-
-        if (pendingAction === 'create') {
-          await createMeeting();
-        } else if (pendingAction === 'join') {
-          if (pendingJoinCode) {
-            await joinMeeting(pendingJoinCode);
-          }
-        } else if (pendingAction === 'schedule') {
-          setShowScheduleModal(true);
-        }
-
-        const params = new URLSearchParams(location.search);
-        const redirect = params.get('redirect');
-        if (redirect && redirect.startsWith('/meeting/')) {
-          navigate(decodeURIComponent(redirect), { replace: true });
-        }
-
-        setPendingAction(null);
-        setPendingJoinCode('');
-        setShowAccountMenu(false);
-      } catch (err) {
-        showError(err.message || 'Google sign-in failed');
-      } finally {
-        setIsSigningIn(false);
-      }
-    },
-    [createMeeting, joinMeeting, location.search, loginWithGoogle, navigate, pendingAction, pendingJoinCode]
-  );
-
-  const handleGoogleError = () => {
-    setIsSigningIn(false);
-    showError('Google sign-in failed');
-  };
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const shouldPromptAuth = params.get('auth') === '1';
-    if (shouldPromptAuth && !isAuthenticated && hasGoogleClientId) {
-      setShowAuthPrompt(true);
-    }
-  }, [hasGoogleClientId, isAuthenticated, location.search]);
-
-  useEffect(() => {
-    setScheduleDraft((prev) => {
-      if (prev.startAt) {
-        return prev;
-      }
-      return {
-        ...prev,
-        startAt: getDefaultScheduleTime(),
-      };
-    });
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!showAccountMenu || !accountMenuRef.current) {
-        return;
-      }
-
+      if (!showAccountMenu || !accountMenuRef.current) return;
       if (!accountMenuRef.current.contains(event.target)) {
         setShowAccountMenu(false);
       }
@@ -338,34 +215,31 @@ const MeetingHomePage = () => {
   return (
     <div className="app-container">
       {showAuthPrompt && (
-        <div className="auth-prompt-popover" role="dialog" aria-label="Sign up with Google">
+        <div className="auth-prompt-popover" role="dialog" aria-label="Sign in with Google">
           <div className="auth-prompt-header">
-            <strong>{pendingAction === 'switch' ? 'Switch Google account' : 'Sign up to continue'}</strong>
+            <strong>{pendingAction === 'switch' ? 'Switch Google account' : 'Sign in to continue'}</strong>
             <button
               type="button"
               className="auth-prompt-close"
               onClick={() => {
-                if (!isSigningIn) {
-                  setShowAuthPrompt(false);
-                  setPendingAction(null);
-                  setPendingJoinCode('');
-                }
+                setShowAuthPrompt(false);
+                setPendingAction(null);
+                setPendingJoinCode('');
               }}
-              aria-label="Close sign-up prompt"
+              aria-label="Close sign-in prompt"
             >
               x
             </button>
           </div>
-          <GoogleLogin
-            key={googleLoginRenderKey}
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            text="signin_with"
-            shape="pill"
-            width="310"
-            auto_select={false}
-            useOneTap={false}
-          />
+          <button
+            type="button"
+            className="landing-signin-btn"
+            onClick={handleAuthPromptAction}
+            disabled={isLoading}
+          >
+            <i className="fab fa-google"></i>
+            {pendingAction === 'switch' ? 'Switch account' : 'Sign in with Google'}
+          </button>
           <p className="auth-prompt-note">Use your Google account to create or join meetings.</p>
         </div>
       )}
@@ -427,10 +301,6 @@ const MeetingHomePage = () => {
                   type="button"
                   className="landing-signin-btn"
                   onClick={() => {
-                    if (!hasGoogleClientId) {
-                      showError('Google sign-in is not configured. Please set REACT_APP_GOOGLE_CLIENT_ID.');
-                      return;
-                    }
                     setPendingAction('signin');
                     setShowAuthPrompt(true);
                   }}
@@ -464,11 +334,7 @@ const MeetingHomePage = () => {
                     placeholder="Enter meeting ID or paste meeting link"
                     aria-label="Meeting ID or link"
                   />
-                  <button
-                    className="btn-secondary btn-hero"
-                    onClick={handleJoinMeetingClick}
-                    type="button"
-                  >
+                  <button className="btn-secondary btn-hero" onClick={handleJoinMeetingClick} type="button">
                     Join
                     <i className="fas fa-chevron-right"></i>
                   </button>

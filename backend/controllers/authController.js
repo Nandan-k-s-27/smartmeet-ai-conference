@@ -1,6 +1,5 @@
 const User = require('../models/User');
-const { createAuthToken, verifyAuthToken, getFrontendUrl, JWT_SECRET } = require('../utils/passportAuth');
-const { verifyAccessToken } = require('../utils/tokenUtils');
+const { createAuthToken, verifyAuthToken, getFrontendUrl } = require('../utils/passportAuth');
 
 /**
  * Google OAuth callback handler

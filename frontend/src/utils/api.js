@@ -2,6 +2,9 @@ export const getApiBase = () => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL.replace(/\/+$/, '');
   }
+  if (process.env.REACT_APP_BACKEND_URL) {
+    return process.env.REACT_APP_BACKEND_URL.replace(/\/+$/, '');
+  }
   const { protocol, hostname } = window.location;
   return `${protocol}//${hostname}:5000`;
 };
