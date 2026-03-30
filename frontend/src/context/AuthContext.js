@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { googleLogout } from '@react-oauth/google';
-import { apiFetch } from '../utils/api';
+import { apiFetch, getApiBase } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
 
   // Initiate Google OAuth login by redirecting to backend
   const loginWithGoogle = useCallback((prompt = undefined) => {
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = getApiBase();
     const params = new URLSearchParams();
     params.set('frontend_url', window.location.origin);
     if (prompt === 'select_account') {

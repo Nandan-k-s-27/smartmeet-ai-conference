@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import io from 'socket.io-client';
 import useFaceDetection from '../hooks/useFaceDetection';
+import { getApiBase, getSocketBase } from '../utils/api';
 import './VideoCall.css';
 
 const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, onStreamChange, appliedSettings, onCleanup, onUserAway, onUserReturn }) => {
@@ -240,16 +241,7 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
       await loadRtcConfiguration();
       await initializeMedia();
       
-      // Production-ready socket URL configuration
-      const getSocketUrl = () => {
-        if (process.env.REACT_APP_SOCKET_URL) {
-          return process.env.REACT_APP_SOCKET_URL;
-        }
-        const { protocol, hostname } = window.location;
-        return `${protocol}//${hostname}:5000`;
-      };
-      
-      const socketBase = getSocketUrl();
+      const socketBase = getSocketBase();
 
       socketRef.current = io(socketBase, {
         transports: ['websocket', 'polling'],
@@ -278,16 +270,8 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
   };
 
   const loadRtcConfiguration = async () => {
-    const getBackendBase = () => {
-      if (process.env.REACT_APP_API_URL) {
-        return process.env.REACT_APP_API_URL.replace(/\/+$/, '');
-      }
-      const { protocol, hostname } = window.location;
-      return `${protocol}//${hostname}:5000`;
-    };
-
     try {
-      const baseUrl = getBackendBase();
+      const baseUrl = getApiBase();
       const response = await fetch(
         `${baseUrl}/api/webrtc/ice-config?meetingId=${encodeURIComponent(meetingId)}&userId=${encodeURIComponent(userId || '')}`
       );

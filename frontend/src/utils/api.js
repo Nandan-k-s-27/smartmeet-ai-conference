@@ -1,12 +1,32 @@
+const normalizeBaseUrl = (value) => String(value || '').trim().replace(/\/+$/, '');
+
+// Production fallback for this deployed app when env vars are missing at build time.
+const DEFAULT_PRODUCTION_BACKEND_URL = 'https://smartmeet-backend.onrender.com';
+
 export const getApiBase = () => {
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL.replace(/\/+$/, '');
+  const fromApiUrl = normalizeBaseUrl(process.env.REACT_APP_API_URL);
+  if (fromApiUrl) return fromApiUrl;
+
+  const fromBackendUrl = normalizeBaseUrl(process.env.REACT_APP_BACKEND_URL);
+  if (fromBackendUrl) return fromBackendUrl;
+
+  const isBrowser = typeof window !== 'undefined';
+  const host = isBrowser ? window.location.hostname : '';
+  const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+
+  if (!isLocalHost && host) {
+    return DEFAULT_PRODUCTION_BACKEND_URL;
   }
-  if (process.env.REACT_APP_BACKEND_URL) {
-    return process.env.REACT_APP_BACKEND_URL.replace(/\/+$/, '');
-  }
-  const { protocol, hostname } = window.location;
+
+  const protocol = isBrowser ? window.location.protocol : 'http:';
+  const hostname = isBrowser ? window.location.hostname : 'localhost';
   return `${protocol}//${hostname}:5000`;
+};
+
+export const getSocketBase = () => {
+  const fromSocketUrl = normalizeBaseUrl(process.env.REACT_APP_SOCKET_URL);
+  if (fromSocketUrl) return fromSocketUrl;
+  return getApiBase();
 };
 
 export const apiFetch = async (endpoint, options = {}) => {
