@@ -3,6 +3,20 @@ import { apiFetch, getApiBase } from '../utils/api';
 
 const AuthContext = createContext(null);
 
+const normalizeUser = (rawUser) => {
+  if (!rawUser || typeof rawUser !== 'object') return null;
+
+  const normalizedId = String(rawUser.id || rawUser._id || rawUser.userId || '').trim();
+  if (!normalizedId) return null;
+
+  return {
+    ...rawUser,
+    id: normalizedId,
+    _id: normalizedId,
+    name: String(rawUser.name || rawUser.email || 'User').trim(),
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -11,9 +25,10 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = useCallback(async () => {
     try {
       const response = await apiFetch('/api/auth/status', { method: 'GET' });
-      if (response.authenticated && response.user) {
-        setUser(response.user);
-        return response.user;
+      const normalizedUser = normalizeUser(response?.user);
+      if (response.authenticated && normalizedUser) {
+        setUser(normalizedUser);
+        return normalizedUser;
       }
       setUser(null);
       return null;
@@ -28,14 +43,16 @@ export const AuthProvider = ({ children }) => {
   const fetchMe = useCallback(async () => {
     try {
       const data = await apiFetch('/api/auth/me', { method: 'GET' });
-      setUser(data.user || null);
-      return data.user || null;
+      const normalizedUser = normalizeUser(data?.user);
+      setUser(normalizedUser);
+      return normalizedUser;
     } catch (error) {
       // Token may be expired. Try to refresh.
       try {
         const refreshed = await apiFetch('/api/auth/refresh', { method: 'POST' });
-        setUser(refreshed.user || null);
-        return refreshed.user || null;
+        const normalizedUser = normalizeUser(refreshed?.user);
+        setUser(normalizedUser);
+        return normalizedUser;
       } catch (refreshError) {
         setUser(null);
         return null;
@@ -94,8 +111,9 @@ export const AuthProvider = ({ children }) => {
   const refreshSession = useCallback(async () => {
     try {
       const data = await apiFetch('/api/auth/refresh', { method: 'POST' });
-      setUser(data.user || null);
-      return data.user || null;
+      const normalizedUser = normalizeUser(data?.user);
+      setUser(normalizedUser);
+      return normalizedUser;
     } catch (error) {
       console.error('[AuthContext] Refresh error:', error);
       setUser(null);

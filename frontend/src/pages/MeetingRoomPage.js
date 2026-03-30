@@ -8,12 +8,14 @@ import MeetingSummary from '../components/MeetingSummary';
 import MissedSpeech from '../components/MissedSpeech';
 import { ThemeSwitch } from '../components/ui/theme-switch-button';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch, getApiBase } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 const MeetingRoomPage = () => {
   const { meetingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const normalizedUserId = String(user?.id || user?._id || '').trim();
+  const normalizedUserName = String(user?.name || user?.email || 'User').trim();
 
   const [showChat, setShowChat] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -105,7 +107,7 @@ const MeetingRoomPage = () => {
     if (!videoCallSocket) return;
 
     const handleTranscript = (data) => {
-      if (isAwayRef.current && data.userId !== String(user._id) && data.isFinal) {
+      if (isAwayRef.current && data.userId !== normalizedUserId && data.isFinal) {
         missedTranscriptsRef.current.push({
           speakerId: data.userId,
           speakerName: data.username,
@@ -117,7 +119,7 @@ const MeetingRoomPage = () => {
 
     videoCallSocket.on('transcript-update', handleTranscript);
     return () => videoCallSocket.off('transcript-update', handleTranscript);
-  }, [videoCallSocket, user]);
+  }, [videoCallSocket, normalizedUserId]);
 
   const handleSummarizeMissedSpeech = async (transcripts) => {
     const response = await apiFetch('/api/summary/missed-speech', {
@@ -209,13 +211,13 @@ const MeetingRoomPage = () => {
               {user?.avatar ? (
                 <img
                   src={user.avatar}
-                  alt={user.name}
+                  alt={normalizedUserName}
                   style={{ width: '20px', height: '20px', borderRadius: '999px', marginRight: '6px', objectFit: 'cover' }}
                 />
               ) : (
                 <i className="fas fa-user"></i>
               )}
-              {user.name} {isHost && '(Host)'}
+              {normalizedUserName} {isHost && '(Host)'}
             </span>
           </div>
 
@@ -244,8 +246,8 @@ const MeetingRoomPage = () => {
           <div className="video-section">
             <VideoCall
               meetingId={meetingId}
-              username={user.name}
-              userId={user._id}
+              username={normalizedUserName}
+              userId={normalizedUserId}
               avatar={user.avatar}
               isHost={isHost}
               setSocket={setVideoCallSocket}
@@ -263,8 +265,8 @@ const MeetingRoomPage = () => {
           <Chat
             socket={videoCallSocket}
             meetingId={meetingId}
-            username={user.name}
-            userId={user._id}
+            username={normalizedUserName}
+            userId={normalizedUserId}
             isOpen={showChat}
             onClose={() => setShowChat(false)}
           />
