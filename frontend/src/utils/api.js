@@ -45,12 +45,18 @@ export const apiFetch = async (endpoint, options = {}) => {
 
   const defaultOptions = {
     ...options,
-    credentials: 'include', // Include cookies
+    credentials: 'include', // Include cookies if they work
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
   };
+
+  // Add Bearer token from localStorage as fallback/primary if third-party cookies are blocked
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+  if (token) {
+    defaultOptions.headers['Authorization'] = `Bearer ${token}`;
+  }
 
   let response = await fetch(url, defaultOptions);
 

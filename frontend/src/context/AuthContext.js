@@ -69,8 +69,11 @@ export const AuthProvider = ({ children }) => {
         const tokenFromUrl = urlParams.get('auth_token');
 
         if (tokenFromUrl) {
-          // Token from OAuth callback is passed through, but the real authentication
-          // is done via the cookie set by the backend callback
+          // Token from OAuth callback is passed through.
+          // Save it to localStorage so it can be sent as a Bearer token
+          // since third-party cookies are blocked by default in modern browsers.
+          localStorage.setItem('auth_token', tokenFromUrl);
+          
           // Clear the URL to clean up
           window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -145,6 +148,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);
     }
+
+    // Clear local storage token
+    localStorage.removeItem('auth_token');
 
     // Clear Google session hints
     clearGoogleSessionHints();
