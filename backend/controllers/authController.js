@@ -42,6 +42,10 @@ const googleCallback = async (req, res) => {
       return res.redirect(`${frontendBase}/login?error=auth_failed`);
     }
 
+    if (!req.user._id || !req.user.email) {
+      return res.redirect(`${frontendBase}/login?error=auth_profile_incomplete`);
+    }
+
     // Create JWT token for authenticated user
     const token = createAuthToken(req.user);
 
