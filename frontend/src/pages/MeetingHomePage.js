@@ -24,6 +24,31 @@ const MeetingHomePage = () => {
   const [error, setError] = useState('');
   const accountMenuRef = useRef(null);
 
+  const formatAuthErrorMessage = useCallback((errorCode, reason) => {
+    const normalizedCode = String(errorCode || '').trim();
+    const normalizedReason = String(reason || '').trim();
+
+    const reasonText = normalizedReason
+      ? ` Reason: ${normalizedReason.replace(/[_+]+/g, ' ')}.`
+      : '';
+
+    switch (normalizedCode) {
+      case 'oauth_callback_error':
+        return `Google sign-in callback failed.${reasonText}`;
+      case 'auth_failed':
+        return `Google sign-in was not completed.${reasonText}`;
+      case 'auth_profile_incomplete':
+        return 'Google account information is incomplete. Please try a different account.';
+      case 'callback_failed':
+        return 'Could not finalize Google sign-in. Please try again.';
+      default:
+        if (normalizedCode) {
+          return `Google sign-in failed (${normalizedCode}).${reasonText}`;
+        }
+        return '';
+    }
+  }, []);
+
   const showError = (message) => {
     setError(message);
     setTimeout(() => setError(''), 5000);
@@ -190,7 +215,31 @@ const MeetingHomePage = () => {
   };
 
   const handleAuthPromptAction = () => {
+    const startPath = `${window.location.pathname}${window.location.search}`;
+    showError('Starting Google sign-in...');
+
+    setTimeout(() => {
+      const currentPath = `${window.location.pathname}${window.location.search}`;
+      if (currentPath === startPath) {
+        showError('Google sign-in did not start. Check backend URL and OAuth settings, then inspect browser console/network logs.');
+      }
+    }, 2000);
+
     loginWithGoogle(pendingAction === 'switch' ? 'select_account' : undefined);
+  };
+
+  const handleHeaderSignIn = () => {
+    const startPath = `${window.location.pathname}${window.location.search}`;
+    showError('Starting Google sign-in...');
+
+    setTimeout(() => {
+      const currentPath = `${window.location.pathname}${window.location.search}`;
+      if (currentPath === startPath) {
+        showError('Google sign-in did not start. Check backend URL and OAuth settings, then inspect browser console/network logs.');
+      }
+    }, 2000);
+
+    loginWithGoogle();
   };
 
   useEffect(() => {
@@ -199,6 +248,18 @@ const MeetingHomePage = () => {
       return { ...prev, startAt: getDefaultScheduleTime() };
     });
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authError = params.get('error');
+    const authReason = params.get('reason');
+
+    const message = formatAuthErrorMessage(authError, authReason);
+    if (!message) return;
+
+    showError(message);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }, [formatAuthErrorMessage]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -300,7 +361,7 @@ const MeetingHomePage = () => {
                 <button
                   type="button"
                   className="landing-signin-btn"
-                  onClick={() => loginWithGoogle()}
+                  onClick={handleHeaderSignIn}
                 >
                   Sign in
                 </button>

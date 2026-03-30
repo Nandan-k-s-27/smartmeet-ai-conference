@@ -57,6 +57,18 @@ const resolveFrontendBase = (req) => {
 router.get(
   '/google',
   (req, res, next) => {
+    const missingConfig = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']
+      .filter((key) => !String(process.env[key] || '').trim());
+
+    if (missingConfig.length > 0) {
+      console.error('[auth] Google OAuth configuration missing:', missingConfig.join(', '));
+      return res.status(500).json({
+        error: 'Google OAuth is not configured on backend',
+        missing: missingConfig,
+        hint: 'Set required Google OAuth environment variables on backend and redeploy.',
+      });
+    }
+
     // Support prompt=select_account for account switching
     const prompt = req.query.prompt === 'select_account' ? 'select_account' : undefined;
 
@@ -69,9 +81,12 @@ router.get(
         const origin = `${url.protocol}//${url.host}`;
         if (isAllowlistedFrontend(origin)) {
           statePayload = { frontend_url: origin };
+        } else {
+          console.warn('[auth] Rejected frontend_url (not allowlisted):', origin);
         }
       } catch (error) {
         statePayload = null;
+        console.warn('[auth] Invalid frontend_url query param:', frontendUrl);
       }
     }
 

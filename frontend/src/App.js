@@ -1,15 +1,21 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
 import MeetingHomePage from './pages/MeetingHomePage';
 import MeetingRoomPage from './pages/MeetingRoomPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
+const LoginRedirect = () => {
+  const location = useLocation();
+  const query = location.search || '';
+  return <Navigate to={`/${query}`} replace />;
+};
+
 function App() {
   return (
     <Routes>
       <Route path="/" element={<MeetingHomePage />} />
-      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/login" element={<LoginRedirect />} />
       <Route
         path="/meeting/:meetingId"
         element={
