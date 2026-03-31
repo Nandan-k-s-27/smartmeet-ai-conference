@@ -1,15 +1,6 @@
 const geminiService = require('../services/geminiService');
 const meetingStore = require('../utils/meetingStore');
 
-const ALLOWED_SUMMARY_TYPES = new Set(['detailed', 'adaptive', 'all']);
-const ALLOWED_SUMMARY_LEVELS = new Set(['beginner', 'intermediate', 'advanced']);
-const MAX_CHAT_MESSAGE_LENGTH = 5000;
-const MAX_CHAT_HISTORY_ITEMS = 100;
-const MAX_MISSED_MESSAGES = 300;
-const MAX_MISSED_TRANSCRIPTS = 300;
-
-const ensureTrimmedString = (value) => String(value || '').trim();
-
 /**
  * Generate meeting summary
  * POST /api/summary/generate
@@ -17,28 +8,11 @@ const ensureTrimmedString = (value) => String(value || '').trim();
 exports.generateSummary = async (req, res) => {
     try {
         const { meetingId, summaryType = 'detailed', level = 'intermediate', additionalData } = req.body;
-        const normalizedMeetingId = ensureTrimmedString(meetingId);
-        const normalizedSummaryType = ensureTrimmedString(summaryType).toLowerCase() || 'detailed';
-        const normalizedLevel = ensureTrimmedString(level).toLowerCase() || 'intermediate';
 
-        if (!normalizedMeetingId) {
+        if (!meetingId) {
             return res.status(400).json({
                 success: false,
                 message: 'Meeting ID is required'
-            });
-        }
-
-        if (!ALLOWED_SUMMARY_TYPES.has(normalizedSummaryType)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid summaryType. Allowed values: detailed, adaptive, all'
-            });
-        }
-
-        if (!ALLOWED_SUMMARY_LEVELS.has(normalizedLevel)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid level. Allowed values: beginner, intermediate, advanced'
             });
         }
 
@@ -51,7 +25,7 @@ exports.generateSummary = async (req, res) => {
         }
 
         // Get meeting data from store
-        const meeting = await meetingStore.getMeeting(normalizedMeetingId);
+        const meeting = await meetingStore.getMeeting(meetingId);
         
         if (!meeting) {
             return res.status(404).json({
@@ -79,21 +53,21 @@ exports.generateSummary = async (req, res) => {
             ...additionalData
         };
 
-        console.log(`📝 Generating ${normalizedSummaryType} (level: ${normalizedLevel}) summary for meeting: ${normalizedMeetingId}`);
+        console.log(`📝 Generating ${summaryType} (level: ${level}) summary for meeting: ${meetingId}`);
         console.log(`   📊 Data: ${meetingData.messages.length} chat msgs, ${meetingData.transcript.length} transcript entries, ${meetingData.activities.length} activities`);
 
         // Generate summary based on type
         let result;
-        if (normalizedSummaryType === 'adaptive') {
+        if (summaryType === 'adaptive') {
             // New adaptive summary based on difficulty level
-            result = await geminiService.generateAdaptiveSummary(meetingData, normalizedLevel);
-        } else if (normalizedSummaryType === 'all') {
+            result = await geminiService.generateAdaptiveSummary(meetingData, level);
+        } else if (summaryType === 'all') {
             result = await geminiService.generateAllSummaries(meetingData);
         } else {
-            result = await geminiService.generateSummary(meetingData, normalizedSummaryType);
+            result = await geminiService.generateSummary(meetingData, summaryType);
         }
 
-        console.log(`✅ Summary generated successfully for meeting: ${normalizedMeetingId}`);
+        console.log(`✅ Summary generated successfully for meeting: ${meetingId}`);
 
         res.json(result);
     } catch (error) {
@@ -112,41 +86,18 @@ exports.generateSummary = async (req, res) => {
 exports.chatWithAI = async (req, res) => {
     try {
         const { meetingId, message, chatHistory = [] } = req.body;
-        const normalizedMeetingId = ensureTrimmedString(meetingId);
-        const normalizedMessage = ensureTrimmedString(message);
 
-        if (!normalizedMeetingId) {
+        if (!meetingId) {
             return res.status(400).json({
                 success: false,
                 message: 'Meeting ID is required'
             });
         }
 
-        if (!normalizedMessage) {
+        if (!message) {
             return res.status(400).json({
                 success: false,
                 message: 'Message is required'
-            });
-        }
-
-        if (normalizedMessage.length > MAX_CHAT_MESSAGE_LENGTH) {
-            return res.status(400).json({
-                success: false,
-                message: `Message is too long. Maximum length is ${MAX_CHAT_MESSAGE_LENGTH} characters.`
-            });
-        }
-
-        if (!Array.isArray(chatHistory)) {
-            return res.status(400).json({
-                success: false,
-                message: 'chatHistory must be an array'
-            });
-        }
-
-        if (chatHistory.length > MAX_CHAT_HISTORY_ITEMS) {
-            return res.status(400).json({
-                success: false,
-                message: `chatHistory is too large. Maximum entries: ${MAX_CHAT_HISTORY_ITEMS}.`
             });
         }
 
@@ -159,7 +110,7 @@ exports.chatWithAI = async (req, res) => {
         }
 
         // Get meeting data from store
-        const meeting = await meetingStore.getMeeting(normalizedMeetingId);
+        const meeting = await meetingStore.getMeeting(meetingId);
         
         if (!meeting) {
             return res.status(404).json({
@@ -182,11 +133,11 @@ exports.chatWithAI = async (req, res) => {
             duration: calculateDuration(allMeetingData.startTime, new Date())
         };
 
-        console.log(`💬 AI Chat for meeting: ${normalizedMeetingId} - "${normalizedMessage.substring(0, 50)}..."`);
+        console.log(`💬 AI Chat for meeting: ${meetingId} - "${message.substring(0, 50)}..."`);
 
-        const result = await geminiService.chatAboutMeeting(meetingData, normalizedMessage, chatHistory);
+        const result = await geminiService.chatAboutMeeting(meetingData, message, chatHistory);
 
-        console.log(`✅ AI responded for meeting: ${normalizedMeetingId}`);
+        console.log(`✅ AI responded for meeting: ${meetingId}`);
 
         res.json(result);
     } catch (error) {
@@ -294,13 +245,6 @@ exports.summarizeMissedMessages = async (req, res) => {
             });
         }
 
-        if (messages.length > MAX_MISSED_MESSAGES) {
-            return res.status(400).json({
-                success: false,
-                message: `Too many messages to summarize at once. Maximum: ${MAX_MISSED_MESSAGES}`
-            });
-        }
-
         if (messages.length === 0) {
             return res.json({
                 success: true,
@@ -348,13 +292,6 @@ exports.summarizeMissedSpeech = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Transcripts array is required'
-            });
-        }
-
-        if (transcripts.length > MAX_MISSED_TRANSCRIPTS) {
-            return res.status(400).json({
-                success: false,
-                message: `Too many transcript entries to summarize at once. Maximum: ${MAX_MISSED_TRANSCRIPTS}`
             });
         }
 

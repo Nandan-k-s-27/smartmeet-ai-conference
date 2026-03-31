@@ -1,8 +1,5 @@
 const MeetingModel = require('../models/Meeting');
 
-const MAX_MESSAGE_TEXT_LENGTH = 10000;
-const MAX_TRANSCRIPT_TEXT_LENGTH = 10000;
-
 class InMemoryMeeting {
     constructor(meetingId, host, hostUsername, title) {
         this.meetingId = meetingId;
@@ -77,12 +74,6 @@ class InMemoryMeeting {
 
     addMessage(message) {
         // message: { userId, username, message, type, timestamp, ... }
-        if (!message || typeof message !== 'object') return;
-        const text = typeof message.message === 'string' ? message.message : '';
-        if (text.length > MAX_MESSAGE_TEXT_LENGTH) {
-            message.message = text.slice(0, MAX_MESSAGE_TEXT_LENGTH);
-        }
-
         this.messages = this.messages || [];
         this.messages.push(message);
         // Keep history bounded to last 500 messages
@@ -96,7 +87,6 @@ class InMemoryMeeting {
     // Add transcript entry (speech-to-text)
     addTranscript(userId, username, text, isFinal = true) {
         if (!text || text.trim() === '') return;
-        if (String(text).length > MAX_TRANSCRIPT_TEXT_LENGTH) return;
         
         this.transcript = this.transcript || [];
         this.transcript.push({

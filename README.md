@@ -245,12 +245,6 @@ GEMINI_API_KEY=your_api_key_here
 GEMINI_API2=backup_key_optional
 GEMINI_API3=backup_key_optional
 
-# Google OAuth - required for sign-in
-# Must match frontend REACT_APP_GOOGLE_CLIENT_ID exactly
-GOOGLE_CLIENT_ID=your_google_web_client_id.apps.googleusercontent.com
-# Optional: allow multiple client IDs (comma-separated)
-# GOOGLE_CLIENT_IDS=your_primary_client_id.apps.googleusercontent.com,your_secondary_client_id.apps.googleusercontent.com
-
 # CORS - Frontend URLs (production)
 ALLOWED_ORIGINS=https://your-frontend.vercel.app,https://app.yourdomain.com
 
@@ -272,10 +266,6 @@ REACT_APP_API_URL=https://your-backend.railway.app
 
 # Socket URL (usually same as API)
 REACT_APP_SOCKET_URL=https://your-backend.railway.app
-
-# Google OAuth - required for sign-in
-# Must match backend GOOGLE_CLIENT_ID exactly
-REACT_APP_GOOGLE_CLIENT_ID=your_google_web_client_id.apps.googleusercontent.com
 
 # TURN credentials are NOT required in frontend env.
 # Frontend fetches ICE/TURN config from backend endpoint: /api/webrtc/ice-config

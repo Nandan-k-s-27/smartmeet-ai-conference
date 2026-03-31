@@ -46,27 +46,13 @@ const useFaceDetection = ({
         const vision = await FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
         );
-        let detector;
-        try {
-          detector = await FaceDetector.createFromOptions(vision, {
-            baseOptions: {
-              modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`,
-              delegate: "GPU"
-            },
-            runningMode: "VIDEO"
-          });
-        } catch (gpuError) {
-          console.warn('⚠️ GPU delegate failed or not supported, falling back to CPU:', gpuError);
-          // Fallback to CPU if GPU delegate is not available/fails
-          detector = await FaceDetector.createFromOptions(vision, {
-            baseOptions: {
-              modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`,
-              delegate: "CPU"
-            },
-            runningMode: "VIDEO"
-          });
-        }
-        
+        const detector = await FaceDetector.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`,
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO"
+        });
         faceDetectorRef.current = detector;
         setIsModelLoaded(true);
         console.log('✅ MediaPipe Face Detector ready');

@@ -3,23 +3,6 @@ const meetingStore = require('../utils/meetingStore');
 // Map to track active sockets to user/meeting info
 const activeSockets = new Map();
 
-const normalize = (value) => String(value || '').trim();
-
-const isValidMeetingPayload = (data) => {
-    const meetingId = normalize(data?.meetingId);
-    const userId = normalize(data?.userId);
-    const username = normalize(data?.username);
-
-    if (!meetingId || meetingId.length > 100) return false;
-    if (!userId || userId.length > 100) return false;
-    if (!username || username.length > 120) return false;
-    return true;
-};
-
-const emitPayloadError = (socket, message) => {
-    socket.emit('error', { message });
-};
-
 module.exports = (io) => {
     io.on('connection', (socket) => {
         console.log('🔌 New client connected:', socket.id);
@@ -28,11 +11,6 @@ module.exports = (io) => {
 
         socket.on('join-meeting', async (data) => {
             try {
-                if (!isValidMeetingPayload(data)) {
-                    emitPayloadError(socket, 'Invalid join meeting payload');
-                    return;
-                }
-
                 const { meetingId, userId, username } = data;
 
                 console.log('🚀 JOIN-MEETING:', username, 'joining', meetingId);
@@ -108,11 +86,6 @@ module.exports = (io) => {
         });
 
         socket.on('leave-meeting', async (data) => {
-            if (!isValidMeetingPayload(data)) {
-                emitPayloadError(socket, 'Invalid leave meeting payload');
-                return;
-            }
-
             const { meetingId, userId } = data;
             console.log('👋 LEAVE-MEETING:', userId, 'leaving', meetingId);
 
@@ -157,7 +130,6 @@ module.exports = (io) => {
 
         socket.on('offer', (data) => {
             // data: { target: socketId, offer: SDP }
-            if (!normalize(data?.target)) return;
             console.log(`Signal: OFFER from ${socket.id} to ${data.target}`);
             io.to(data.target).emit('offer', {
                 offer: data.offer,
@@ -167,7 +139,6 @@ module.exports = (io) => {
 
         socket.on('answer', (data) => {
             // data: { target: socketId, answer: SDP }
-            if (!normalize(data?.target)) return;
             console.log(`Signal: ANSWER from ${socket.id} to ${data.target}`);
             io.to(data.target).emit('answer', {
                 answer: data.answer,
@@ -177,7 +148,6 @@ module.exports = (io) => {
 
         socket.on('ice-candidate', (data) => {
             // data: { target: socketId, candidate: ICE }
-            if (!normalize(data?.target)) return;
             // console.log(`Signal: ICE from ${socket.id} to ${data.target}`);
             io.to(data.target).emit('ice-candidate', {
                 candidate: data.candidate,

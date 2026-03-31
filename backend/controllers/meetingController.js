@@ -1,26 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
 const MeetingModel = require('../models/Meeting');
+const User = require('../models/User');
 const meetingStore = require('../utils/meetingStore');
-
-const getAuthParticipant = (req) => {
-    // Auth middleware attaches JWT payload with `id`; keep backward compatibility with `_id`.
-    const rawUserId = req.user?.id || req.user?._id || req.user?.userId || '';
-    const userId = String(rawUserId || '').trim();
-    const username = req.user?.name || req.user?.email || 'User';
-    return { userId, username };
-};
 
 exports.createMeeting = async (req, res) => {
     try {
-        const { title } = req.body;
-        const { userId: host, username: hostUsername } = getAuthParticipant(req);
-
-        if (!host) {
-            return res.status(401).json({
-                success: false,
-                message: 'Unauthorized user'
-            });
-        }
+        const { host, hostUsername, title } = req.body;
 
         // Auto-generate meeting ID
         const meetingId = uuidv4().substring(0, 8).toUpperCase();
@@ -47,6 +32,17 @@ exports.createMeeting = async (req, res) => {
         // Save to MongoDB
         const dbMeeting = new MeetingModel(dbMeetingData);
         await dbMeeting.save();
+
+        // Create or update user in MongoDB
+        await User.findOneAndUpdate(
+            { userId: host },
+            {
+                userId: host,
+                username: hostUsername,
+                $push: { joinedMeetings: { meetingId: dbMeeting._id, joinedAt: new Date() } }
+            },
+            { upsert: true, new: true }
+        );
 
         console.log('✅ Meeting created:', meetingId);
 
@@ -98,14 +94,7 @@ exports.getMeeting = async (req, res) => {
 exports.joinMeeting = async (req, res) => {
     try {
         const { meetingId } = req.params;
-        const { userId, username } = getAuthParticipant(req);
-
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                message: 'Unauthorized user'
-            });
-        }
+        const { userId, username } = req.body;
 
         const meeting = await meetingStore.getMeeting(meetingId);
         if (!meeting || !meeting.isActive) {
@@ -129,11 +118,19 @@ exports.joinMeeting = async (req, res) => {
                     joinedAt: new Date()
                 });
                 await dbMeeting.save();
-            } else if (existingParticipant.leftAt) {
-                existingParticipant.leftAt = undefined;
-                await dbMeeting.save();
             }
         }
+
+        // Create or update user
+        await User.findOneAndUpdate(
+            { userId },
+            {
+                userId,
+                username,
+                $addToSet: { joinedMeetings: { meetingId: dbMeeting?._id, joinedAt: new Date() } }
+            },
+            { upsert: true, new: true }
+        );
 
         console.log('✅ User joined via API:', username, 'to meeting:', meetingId);
 
@@ -162,14 +159,7 @@ exports.joinMeeting = async (req, res) => {
 exports.leaveMeeting = async (req, res) => {
     try {
         const { meetingId } = req.params;
-        const { userId } = getAuthParticipant(req);
-
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                message: 'Unauthorized user'
-            });
-        }
+        const { userId } = req.body;
 
         const meeting = await meetingStore.getMeeting(meetingId);
         if (meeting) {
@@ -204,14 +194,7 @@ exports.leaveMeeting = async (req, res) => {
 exports.endMeeting = async (req, res) => {
     try {
         const { meetingId } = req.params;
-        const { userId } = getAuthParticipant(req);
-
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                message: 'Unauthorized user'
-            });
-        }
+        const { userId } = req.body;
 
         const meeting = await meetingStore.getMeeting(meetingId);
         

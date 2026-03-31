@@ -5,17 +5,10 @@ const http = require('http');
 const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const session = require('express-session');
-const passport = require('passport');
 const connectDB = require('./config/db');
 const meetingController = require('./controllers/meetingController');
 const summaryController = require('./controllers/summaryController');
 const socketHandler = require('./socket/socketHandler');
-const { requireAuth } = require('./middleware/authMiddleware');
-const authRoutes = require('./routes/authRoutes');
-const { initializePassportGoogle } = require('./utils/passportAuth');
-const { validateEnv, getSessionSecret } = require('./config/validateEnv');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,27 +16,15 @@ const server = http.createServer(app);
 // Environment
 const isProduction = process.env.NODE_ENV === 'production';
 
-validateEnv();
-
-// Initialize Passport.js for Google OAuth
-initializePassportGoogle();
-
-// Needed behind reverse proxies (Render/NGINX) for secure cookie behavior.
-app.set('trust proxy', 1);
-
 // Connect to MongoDB
 connectDB();
 
 // Production-ready CORS configuration
 // Set ALLOWED_ORIGINS in .env or deployment platform as comma-separated URLs
 // Example: ALLOWED_ORIGINS=https://your-frontend.com,https://app.yourdomain.com
-const normalizeOrigin = (value) => (value || '').trim().replace(/\/+$/, '');
-
 const getAllowedOrigins = () => {
   if (process.env.ALLOWED_ORIGINS) {
-    return process.env.ALLOWED_ORIGINS.split(',')
-      .map((origin) => normalizeOrigin(origin))
-      .filter(Boolean);
+    return process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
   }
   // Default: allow all in development
   return null;
@@ -53,10 +34,8 @@ const allowedOrigins = getAllowedOrigins();
 
 const corsOptions = {
   origin: (origin, callback) => {
-    const normalizedOrigin = normalizeOrigin(origin);
-
     // Allow requests with no origin (mobile apps, curl, Postman)
-    if (!normalizedOrigin) return callback(null, true);
+    if (!origin) return callback(null, true);
 
     // If ALLOWED_ORIGINS is not set, allow all origins
     if (!allowedOrigins) {
@@ -64,7 +43,7 @@ const corsOptions = {
     }
 
     // Check if origin is in allowed list
-    if (allowedOrigins.includes(normalizedOrigin)) {
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
@@ -73,29 +52,12 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Deny origin without throwing an internal server error.
-    return callback(null, false);
+    // Block origin in production if not in allowed list
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 };
-
-// Return a clear error in production when the request origin is not allowlisted.
-app.use((req, res, next) => {
-  if (!isProduction || !allowedOrigins) {
-    return next();
-  }
-
-  const requestOrigin = normalizeOrigin(req.headers.origin);
-  if (!requestOrigin || allowedOrigins.includes(requestOrigin)) {
-    return next();
-  }
-
-  return res.status(403).json({
-    error: 'Origin not allowed. Add this URL to ALLOWED_ORIGINS.',
-  });
-});
 
 const io = socketIo(server, {
   cors: corsOptions,
@@ -155,34 +117,8 @@ const getRtcConfiguration = () => {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// Session middleware for Passport
-const sessionOptions = {
-  secret: getSessionSecret(),
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: isProduction, // HTTPS only in production
-    httpOnly: true,
-    sameSite: isProduction ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-};
-
-const usePassportSession = !isProduction;
-
-if (usePassportSession) {
-  app.use(session(sessionOptions));
-}
-
-// Initialize Passport
-app.use(passport.initialize());
-if (usePassportSession) {
-  app.use(passport.session());
-}
 
 // Handle preflight OPTIONS requests
 app.options('*', cors(corsOptions));
@@ -198,15 +134,12 @@ if (!isProduction) {
 // Initialize Socket Handler
 socketHandler(io);
 
-// Auth Routes (no requireAuth needed here)
-app.use('/api/auth', authRoutes);
-
-// API Routes (Protected with requireAuth)
-app.post('/api/meetings/create', requireAuth, meetingController.createMeeting);
-app.get('/api/meetings/:meetingId', requireAuth, meetingController.getMeeting);
-app.post('/api/meetings/:meetingId/join', requireAuth, meetingController.joinMeeting);
-app.post('/api/meetings/:meetingId/leave', requireAuth, meetingController.leaveMeeting);
-app.post('/api/meetings/:meetingId/end', requireAuth, meetingController.endMeeting);
+// API Routes
+app.post('/api/meetings/create', meetingController.createMeeting);
+app.get('/api/meetings/:meetingId', meetingController.getMeeting);
+app.post('/api/meetings/:meetingId/join', meetingController.joinMeeting);
+app.post('/api/meetings/:meetingId/leave', meetingController.leaveMeeting);
+app.post('/api/meetings/:meetingId/end', meetingController.endMeeting);
 
 // WebRTC ICE/TURN config endpoint
 app.get('/api/webrtc/ice-config', (req, res) => {
@@ -235,8 +168,8 @@ app.get('/api/summary/meeting-data/:meetingId', summaryController.getMeetingData
 
 // Health Check endpoint
 app.get('/', (req, res) => {
-  res.json({
-    status: 'ok',
+  res.json({ 
+    status: 'ok', 
     service: 'SmartMeet API',
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development'
@@ -252,7 +185,7 @@ app.get('/health', (req, res) => {
     mongodb: mongoStatus,
     environment: process.env.NODE_ENV || 'development'
   };
-
+  
   const statusCode = mongoose.connection.readyState === 1 ? 200 : 503;
   res.status(statusCode).json(health);
 });

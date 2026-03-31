@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/favicon.png" />
     <link rel="alternate icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <meta name="theme-color" content="#1a1240" />
+    <meta name="theme-color" content="#4facfe" />
     <meta name="description" content="SmartMeet - AI-Powered Video Conferencing Platform with Real-time Collaboration, Screen Sharing, Breakout Rooms, Polls, and Advanced Analytics" />
     <meta name="keywords" content="video conferencing, online meetings, webrtc, screen sharing, collaboration, AI meetings" />
     
@@ -36,22 +36,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <script>
-      (function() {
-        try {
-          var savedTheme = localStorage.getItem('theme');
-          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var theme = savedTheme || (prefersDark ? 'dark' : 'light');
-          var darkMode = theme === 'dark';
-          document.documentElement.setAttribute('data-theme', theme);
-          document.documentElement.classList.toggle('dark', darkMode);
-          document.documentElement.classList.toggle('light', !darkMode);
-        } catch (e) {
-          // Ignore localStorage access issues and keep default theme.
-        }
-      })();
-    </script>
     
     <style>
       /* Critical CSS for initial render */
@@ -62,10 +46,7 @@
           'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        background:
-          radial-gradient(circle at 20% 10%, rgba(84, 35, 161, 0.45) 0%, rgba(84, 35, 161, 0) 36%),
-          radial-gradient(circle at 78% 24%, rgba(244, 114, 182, 0.35) 0%, rgba(244, 114, 182, 0) 34%),
-          linear-gradient(180deg, #0d0d25 0%, #1a1240 42%, #140f34 100%);
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         overflow-x: hidden;
       }
       
@@ -80,11 +61,8 @@
         justify-content: center;
         align-items: center;
         min-height: 100vh;
-        background:
-          radial-gradient(circle at 20% 10%, rgba(84, 35, 161, 0.45) 0%, rgba(84, 35, 161, 0) 36%),
-          radial-gradient(circle at 78% 24%, rgba(244, 114, 182, 0.35) 0%, rgba(244, 114, 182, 0) 34%),
-          linear-gradient(180deg, #0d0d25 0%, #1a1240 42%, #140f34 100%);
-        color: #f6efff;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
       }
       
       .loading-spinner {
@@ -151,14 +129,6 @@
     </style>
   </head>
   <body>
-    <script>
-      (function() {
-        var theme = document.documentElement.getAttribute('data-theme');
-        var darkMode = theme === 'dark';
-        document.body.classList.toggle('dark-mode', darkMode);
-        document.body.classList.toggle('light-mode', !darkMode);
-      })();
-    </script>
     <noscript>
       <div class="noscript-content">
         <i class="fas fa-exclamation-triangle"></i>

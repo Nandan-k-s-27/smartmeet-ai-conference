@@ -1,19 +1,11 @@
 import React from 'react';
 import './ConfirmModal.css';
 
-const ConfirmModal = ({ isOpen = false, onClose, onCancel, onConfirm, title, message, confirmText, cancelText, isHost }) => {
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText, cancelText, isHost }) => {
   if (!isOpen) return null;
 
-  const handleCancel = () => {
-    (onClose || onCancel)?.();
-  };
-
-  const handleConfirm = async () => {
-    await onConfirm?.();
-  };
-
   return (
-    <div className="confirm-modal-overlay" onClick={handleCancel}>
+    <div className="confirm-modal-overlay" onClick={onClose}>
       <div className="confirm-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="confirm-modal-icon">
           <i className="fas fa-exclamation-triangle"></i>
@@ -34,14 +26,17 @@ const ConfirmModal = ({ isOpen = false, onClose, onCancel, onConfirm, title, mes
           <button 
             type="button" 
             className="btn-cancel" 
-            onClick={handleCancel}
+            onClick={onClose}
           >
             {cancelText || 'Cancel'}
           </button>
           <button 
             type="button" 
             className="btn-confirm-danger" 
-            onClick={handleConfirm}
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
           >
             <i className="fas fa-sign-out-alt"></i>
             {confirmText || 'Leave'}
