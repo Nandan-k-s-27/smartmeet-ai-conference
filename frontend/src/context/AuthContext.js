@@ -21,6 +21,21 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshUserFromSession = useCallback(async ({ logError = false } = {}) => {
+    try {
+      const data = await apiFetch('/api/auth/refresh', { method: 'POST' });
+      const normalizedUser = normalizeUser(data?.user);
+      setUser(normalizedUser);
+      return normalizedUser;
+    } catch (error) {
+      if (logError) {
+        console.error('[AuthContext] Refresh error:', error);
+      }
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   // Check authentication status
   const checkAuthStatus = useCallback(async () => {
     try {
@@ -48,17 +63,9 @@ export const AuthProvider = ({ children }) => {
       return normalizedUser;
     } catch (error) {
       // Token may be expired. Try to refresh.
-      try {
-        const refreshed = await apiFetch('/api/auth/refresh', { method: 'POST' });
-        const normalizedUser = normalizeUser(refreshed?.user);
-        setUser(normalizedUser);
-        return normalizedUser;
-      } catch (refreshError) {
-        setUser(null);
-        return null;
-      }
+      return refreshUserFromSession();
     }
-  }, []);
+  }, [refreshUserFromSession]);
 
   // Initialize auth on mount
   useEffect(() => {
@@ -112,17 +119,8 @@ export const AuthProvider = ({ children }) => {
 
   // Refresh session
   const refreshSession = useCallback(async () => {
-    try {
-      const data = await apiFetch('/api/auth/refresh', { method: 'POST' });
-      const normalizedUser = normalizeUser(data?.user);
-      setUser(normalizedUser);
-      return normalizedUser;
-    } catch (error) {
-      console.error('[AuthContext] Refresh error:', error);
-      setUser(null);
-      return null;
-    }
-  }, []);
+    return refreshUserFromSession({ logError: true });
+  }, [refreshUserFromSession]);
 
   // Clear Google session hints for account switching
   const clearGoogleSessionHints = useCallback(() => {
@@ -135,14 +133,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Revoke Google account access
-  const revokeGoogleAccountAccess = useCallback(async (email) => {
-    // No-op for backend redirect OAuth flow.
-    return;
-  }, []);
-
   // Logout
-  const logout = useCallback(async ({ revokeEmail, switchAccount } = {}) => {
+  const logout = useCallback(async ({ switchAccount } = {}) => {
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
     } catch (error) {
@@ -154,9 +146,6 @@ export const AuthProvider = ({ children }) => {
 
     // Clear Google session hints
     clearGoogleSessionHints();
-
-    // Keep parameter for backwards compatibility; no SDK revoke needed.
-    void revokeEmail;
 
     setUser(null);
 
@@ -177,9 +166,8 @@ export const AuthProvider = ({ children }) => {
       logout,
       checkAuthStatus,
       clearGoogleSessionHints,
-      revokeGoogleAccountAccess,
     }),
-    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout, checkAuthStatus, clearGoogleSessionHints, revokeGoogleAccountAccess]
+    [user, loading, loginWithGoogle, refreshSession, fetchMe, logout, checkAuthStatus, clearGoogleSessionHints]
   );
 
   return (

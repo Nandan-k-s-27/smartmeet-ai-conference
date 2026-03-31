@@ -119,6 +119,57 @@
   z-index: 60;
 }
 
+.landing-account-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 4px;
+  border-radius: 999px;
+  background: rgba(11, 18, 32, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.landing-account-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.landing-account-email {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: #c7d1e8;
+}
+
+.landing-account-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.landing-account-action-btn {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 0;
+  background: linear-gradient(180deg, #2f3d6d 0%, #1a2248 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.landing-account-action-btn:hover {
+  filter: brightness(1.08);
+}
+
+.landing-account-action-btn.logout {
+  background: linear-gradient(180deg, #f05252 0%, #dc2626 100%);
+}
+
 .landing-account-trigger {
   height: 34px;
   border-radius: 999px;
@@ -468,7 +519,8 @@
     font-size: 30px;
   }
 
-  .landing-account-name {
+  .landing-account-name,
+  .landing-account-email {
     display: none;
   }
 
@@ -510,10 +562,20 @@
 
   .landing-v2-topbar {
     gap: 8px;
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .landing-v2-top-actions {
     gap: 8px;
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .landing-account-panel {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .features-list {
@@ -580,6 +642,23 @@ body.light-mode .landing-icon-btn,
 body.light-mode .landing-account-trigger {
   background: transparent;
   color: #1e293b;
+}
+
+body.light-mode .landing-account-panel {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: #dbe4f3;
+}
+
+body.light-mode .landing-account-email {
+  color: #64748b;
+}
+
+body.light-mode .landing-account-action-btn {
+  background: linear-gradient(180deg, #334155 0%, #1f2937 100%);
+}
+
+body.light-mode .landing-account-action-btn.logout {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
 }
 
 body.light-mode .landing-signin-btn:hover,

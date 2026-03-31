@@ -10,7 +10,6 @@ const MeetingHomePage = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [joinInput, setJoinInput] = useState('');
   const [pendingAction, setPendingAction] = useState(null);
@@ -22,7 +21,7 @@ const MeetingHomePage = () => {
     description: '',
   });
   const [error, setError] = useState('');
-  const accountMenuRef = useRef(null);
+  const errorTimerRef = useRef(null);
 
   const formatAuthErrorMessage = useCallback((errorCode, reason) => {
     const normalizedCode = String(errorCode || '').trim();
@@ -50,8 +49,11 @@ const MeetingHomePage = () => {
   }, []);
 
   const showError = (message) => {
+    if (errorTimerRef.current) {
+      clearTimeout(errorTimerRef.current);
+    }
     setError(message);
-    setTimeout(() => setError(''), 5000);
+    errorTimerRef.current = setTimeout(() => setError(''), 5000);
   };
 
   const getDefaultScheduleTime = () => {
@@ -137,15 +139,13 @@ const MeetingHomePage = () => {
 
   const handleSwitchAccount = async () => {
     await logout({ switchAccount: true });
-    setShowAccountMenu(false);
   };
 
   const handleLogout = async () => {
-    await logout({ revokeEmail: user?.email });
+    await logout();
     setPendingAction(null);
     setPendingJoinCode('');
     setShowAuthPrompt(false);
-    setShowAccountMenu(false);
     setShowScheduleModal(false);
     navigate('/', { replace: true });
   };
@@ -214,7 +214,7 @@ const MeetingHomePage = () => {
     }
   };
 
-  const handleAuthPromptAction = () => {
+  const startGoogleSignIn = useCallback((prompt) => {
     const startPath = `${window.location.pathname}${window.location.search}`;
     showError('Starting Google sign-in...');
 
@@ -225,21 +225,15 @@ const MeetingHomePage = () => {
       }
     }, 2000);
 
-    loginWithGoogle(pendingAction === 'switch' ? 'select_account' : undefined);
+    loginWithGoogle(prompt);
+  }, [loginWithGoogle]);
+
+  const handleAuthPromptAction = () => {
+    startGoogleSignIn(pendingAction === 'switch' ? 'select_account' : undefined);
   };
 
   const handleHeaderSignIn = () => {
-    const startPath = `${window.location.pathname}${window.location.search}`;
-    showError('Starting Google sign-in...');
-
-    setTimeout(() => {
-      const currentPath = `${window.location.pathname}${window.location.search}`;
-      if (currentPath === startPath) {
-        showError('Google sign-in did not start. Check backend URL and OAuth settings, then inspect browser console/network logs.');
-      }
-    }, 2000);
-
-    loginWithGoogle();
+    startGoogleSignIn();
   };
 
   useEffect(() => {
@@ -262,16 +256,12 @@ const MeetingHomePage = () => {
   }, [formatAuthErrorMessage]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!showAccountMenu || !accountMenuRef.current) return;
-      if (!accountMenuRef.current.contains(event.target)) {
-        setShowAccountMenu(false);
+    return () => {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
       }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAccountMenu]);
+  }, []);
 
   return (
     <div className="app-container">
@@ -314,48 +304,29 @@ const MeetingHomePage = () => {
 
             <div className="landing-v2-top-actions">
               {isAuthenticated ? (
-                <div className="landing-account" ref={accountMenuRef}>
-                  <button
-                    className="landing-account-trigger"
-                    type="button"
-                    onClick={() => setShowAccountMenu((prev) => !prev)}
-                  >
+                <div className="landing-account">
+                  <div className="landing-account-panel">
                     {user?.avatar ? (
                       <img className="landing-account-avatar" src={user.avatar} alt={user.name} />
                     ) : (
                       <span className="landing-account-initial">{(user?.name || 'U').slice(0, 1).toUpperCase()}</span>
                     )}
-                    <span className="landing-account-name">{user?.name || 'Account'}</span>
-                    <i className="fas fa-chevron-down"></i>
-                  </button>
 
-                  {showAccountMenu && (
-                    <div className="landing-account-menu">
-                      <div className="landing-account-menu-header">
-                        <strong>{user?.email}</strong>
-                      </div>
+                    <div className="landing-account-meta">
+                      <span className="landing-account-name">{user?.name || 'Account'}</span>
+                      <span className="landing-account-email">{user?.email || ''}</span>
+                    </div>
 
-                      <a
-                        href="https://myaccount.google.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="landing-account-menu-item"
-                      >
-                        <i className="fas fa-user-cog"></i>
-                        Google account settings
-                      </a>
-
-                      <button type="button" className="landing-account-menu-item" onClick={handleSwitchAccount}>
-                        <i className="fas fa-exchange-alt"></i>
-                        Switch account
+                    <div className="landing-account-actions">
+                      <button type="button" className="landing-account-action-btn" onClick={handleSwitchAccount}>
+                        Switch
                       </button>
 
-                      <button type="button" className="landing-account-menu-item logout" onClick={handleLogout}>
-                        <i className="fas fa-sign-out-alt"></i>
+                      <button type="button" className="landing-account-action-btn logout" onClick={handleLogout}>
                         Logout
                       </button>
                     </div>
-                  )}
+                  </div>
                 </div>
               ) : (
                 <button
@@ -483,9 +454,9 @@ const MeetingHomePage = () => {
               <label htmlFor="schedule-description">Description (optional)</label>
               <textarea
                 id="schedule-description"
-                rows={3}
                 value={scheduleDraft.description}
                 onChange={(e) => setScheduleDraft((prev) => ({ ...prev, description: e.target.value }))}
+                rows={3}
                 placeholder="Agenda, goals, and notes"
               />
             </div>
