@@ -10,6 +10,9 @@ class GeminiService {
             process.env.GEMINI_API3
         ].filter(key => key && key.trim()); // Filter out empty/undefined keys
         this.apiKeys = [...new Set(rawApiKeys)];
+        if (rawApiKeys.length !== this.apiKeys.length) {
+            console.warn('⚠️ Duplicate Gemini API keys detected across environment variables; duplicates were ignored.');
+        }
         
         this.currentApiKeyIndex = 0;
         this.apiKey = this.apiKeys[0];
@@ -38,8 +41,7 @@ class GeminiService {
                     const { client, method } = this.createClient(key);
                     this.genAIClients.push(client);
                     this.clientInitMethods.push(method);
-                    const maskedKey = key.substring(0, 10) + '...' + key.substring(key.length - 4);
-                    console.log(`✅ Initialized API client ${index + 1}: ${maskedKey} (${method} constructor)`);
+                    console.log(`✅ Initialized API client ${index + 1} (${method} constructor)`);
                 } catch (err) {
                     console.warn(`⚠️ Failed to initialize API client ${index + 1}: ${err.message}`);
                     this.genAIClients.push(null);
@@ -134,8 +136,7 @@ class GeminiService {
             this.genAI = this.genAIClients[this.currentApiKeyIndex];
             this.clientInitMethod = this.clientInitMethods[this.currentApiKeyIndex];
             
-            const maskedKey = this.apiKey.substring(0, 10) + '...' + this.apiKey.substring(this.apiKey.length - 4);
-            console.log(`🔄 Switched to API key ${this.currentApiKeyIndex + 1}: ${maskedKey}`);
+            console.log(`🔄 Switched to API key ${this.currentApiKeyIndex + 1}`);
             
             // Reinitialize models with new API key
             this.currentModelIndex = 0;
