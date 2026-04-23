@@ -3,16 +3,22 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 class GeminiService {
     constructor() {
         // Load all API keys
-        this.apiKeys = [
+        const rawApiKeys = [
             process.env.GEMINI_API_KEY,
+            process.env.GOOGLE_API_KEY,
             process.env.GEMINI_API2,
             process.env.GEMINI_API3
         ].filter(key => key && key.trim()); // Filter out empty/undefined keys
+        this.apiKeys = [...new Set(rawApiKeys)];
+        if (rawApiKeys.length !== this.apiKeys.length) {
+            console.warn('ℹ️ Duplicate Gemini API key values detected across env vars (often expected when GEMINI_API_KEY and GOOGLE_API_KEY match); duplicates were ignored.');
+        }
         
         this.currentApiKeyIndex = 0;
         this.apiKey = this.apiKeys[0];
         this.genAI = null;
         this.genAIClients = []; // Store clients for each API key
+        this.clientInitMethods = [];
         this.models = {}; // Store multiple models
         this.currentModelIndex = 0;
         this.chatSessions = new Map(); // Store chat sessions per meeting
@@ -21,7 +27,9 @@ class GeminiService {
         this.modelNames = [
             'gemini-2.5-flash',      // Primary - latest & fastest
             'gemini-2.0-flash',      // Fallback - stable
-            'gemini-2.0-flash-lite'  // Last resort - lightweight
+            'gemini-1.5-flash',      // Broadly supported fallback
+            'gemini-1.5-pro',        // Strong quality fallback
+            'gemini-pro'             // Legacy fallback for older SDK/API support
         ];
         
         console.log(`🔑 Found ${this.apiKeys.length} Gemini API key(s)`);
@@ -30,30 +38,56 @@ class GeminiService {
             // Initialize clients for all API keys
             this.apiKeys.forEach((key, index) => {
                 try {
-                    const client = new GoogleGenerativeAI(key);
+                    const { client, method } = this.createClient(key);
                     this.genAIClients.push(client);
-                    const maskedKey = key.substring(0, 10) + '...' + key.substring(key.length - 4);
-                    console.log(`✅ Initialized API client ${index + 1}: ${maskedKey}`);
+                    this.clientInitMethods.push(method);
+                    console.log(`✅ Initialized API client ${index + 1} (${method} constructor)`);
                 } catch (err) {
                     console.warn(`⚠️ Failed to initialize API client ${index + 1}: ${err.message}`);
                     this.genAIClients.push(null);
+                    this.clientInitMethods.push(null);
                 }
             });
             
             // Set primary client
             this.genAI = this.genAIClients[0];
-            process.env.GOOGLE_API_KEY = this.apiKey;
+            this.clientInitMethod = this.clientInitMethods[0];
             
             if (this.genAI) {
-                this.clientInitMethod = 'string';
                 console.log(`ℹ️ GoogleGenerativeAI initialized via constructor: ${this.clientInitMethod}`);
             }
 
             // Initialize all models with primary API key
             this.initializeModels();
         } else {
-            console.warn('⚠️ No GEMINI_API_KEY set - Summary feature will be disabled');
+            console.warn('⚠️ No GEMINI_API_KEY/GOOGLE_API_KEY set - Summary feature will be disabled');
         }
+    }
+
+    createClient(apiKey) {
+        const attempts = [
+            {
+                method: 'string',
+                create: () => new GoogleGenerativeAI(apiKey)
+            },
+            {
+                method: 'object',
+                create: () => new GoogleGenerativeAI({ apiKey })
+            }
+        ];
+
+        let lastError = null;
+        for (const attempt of attempts) {
+            try {
+                return {
+                    client: attempt.create(),
+                    method: attempt.method
+                };
+            } catch (err) {
+                lastError = err;
+            }
+        }
+        throw lastError || new Error('Failed to initialize GoogleGenerativeAI');
     }
     
     /**
@@ -97,9 +131,9 @@ class GeminiService {
             this.currentApiKeyIndex++;
             this.apiKey = this.apiKeys[this.currentApiKeyIndex];
             this.genAI = this.genAIClients[this.currentApiKeyIndex];
+            this.clientInitMethod = this.clientInitMethods[this.currentApiKeyIndex];
             
-            const maskedKey = this.apiKey.substring(0, 10) + '...' + this.apiKey.substring(this.apiKey.length - 4);
-            console.log(`🔄 Switched to API key ${this.currentApiKeyIndex + 1}: ${maskedKey}`);
+            console.log('🔄 Switched to next configured API key');
             
             // Reinitialize models with new API key
             this.currentModelIndex = 0;
@@ -119,6 +153,7 @@ class GeminiService {
             this.currentApiKeyIndex = 0;
             this.apiKey = this.apiKeys[0];
             this.genAI = this.genAIClients[0];
+            this.clientInitMethod = this.clientInitMethods[0];
             this.currentModelIndex = 0;
             this.initializeModels();
             console.log(`↩️ Reset to primary API key`);
