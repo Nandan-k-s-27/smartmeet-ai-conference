@@ -52,9 +52,6 @@ class GeminiService {
             // Set primary client
             this.genAI = this.genAIClients[0];
             this.clientInitMethod = this.clientInitMethods[0];
-            if (!process.env.GOOGLE_API_KEY && this.apiKey) {
-                process.env.GOOGLE_API_KEY = this.apiKey;
-            }
             
             if (this.genAI) {
                 console.log(`ℹ️ GoogleGenerativeAI initialized via constructor: ${this.clientInitMethod}`);
@@ -136,7 +133,7 @@ class GeminiService {
             this.genAI = this.genAIClients[this.currentApiKeyIndex];
             this.clientInitMethod = this.clientInitMethods[this.currentApiKeyIndex];
             
-            console.log(`🔄 Switched to API key ${this.currentApiKeyIndex + 1}`);
+            console.log('🔄 Switched to next configured API key');
             
             // Reinitialize models with new API key
             this.currentModelIndex = 0;
