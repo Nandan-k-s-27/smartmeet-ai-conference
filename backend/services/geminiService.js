@@ -11,7 +11,7 @@ class GeminiService {
         ].filter(key => key && key.trim()); // Filter out empty/undefined keys
         this.apiKeys = [...new Set(rawApiKeys)];
         if (rawApiKeys.length !== this.apiKeys.length) {
-            console.warn('⚠️ Duplicate Gemini API keys detected across environment variables; duplicates were ignored.');
+            console.warn('ℹ️ Duplicate Gemini API key values detected across env vars (often expected when GEMINI_API_KEY and GOOGLE_API_KEY match); duplicates were ignored.');
         }
         
         this.currentApiKeyIndex = 0;
