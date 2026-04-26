@@ -9,11 +9,13 @@ class GeminiService {
             process.env.GEMINI_API2,
             process.env.GEMINI_API3
         ].filter(key => key && key.trim()); // Filter out empty/undefined keys
+
         this.apiKeys = [...new Set(rawApiKeys)];
         if (rawApiKeys.length !== this.apiKeys.length) {
             console.warn('ℹ️ Duplicate Gemini API key values detected across env vars (often expected when GEMINI_API_KEY and GOOGLE_API_KEY match); duplicates were ignored.');
         }
-        
+
+        this.modelNames = this.getConfiguredModelNames();
         this.currentApiKeyIndex = 0;
         this.apiKey = this.apiKeys[0];
         this.genAI = null;
@@ -22,18 +24,9 @@ class GeminiService {
         this.models = {}; // Store multiple models
         this.currentModelIndex = 0;
         this.chatSessions = new Map(); // Store chat sessions per meeting
-        
-        // Model priority list (primary to fallbacks) - prefer newest/fastest first
-        this.modelNames = [
-            'gemini-2.5-flash',      // Primary - latest & fastest
-            'gemini-2.0-flash',      // Fallback - stable
-            'gemini-1.5-flash',      // Broadly supported fallback
-            'gemini-1.5-pro',        // Strong quality fallback
-            'gemini-pro'             // Legacy fallback for older SDK/API support
-        ];
-        
+
         console.log(`🔑 Found ${this.apiKeys.length} Gemini API key(s)`);
-        
+
         if (this.apiKeys.length > 0) {
             // Initialize clients for all API keys
             this.apiKeys.forEach((key, index) => {
@@ -48,11 +41,11 @@ class GeminiService {
                     this.clientInitMethods.push(null);
                 }
             });
-            
+
             // Set primary client
             this.genAI = this.genAIClients[0];
             this.clientInitMethod = this.clientInitMethods[0];
-            
+
             if (this.genAI) {
                 console.log(`ℹ️ GoogleGenerativeAI initialized via constructor: ${this.clientInitMethod}`);
             }
@@ -87,7 +80,29 @@ class GeminiService {
                 lastError = err;
             }
         }
+
         throw lastError || new Error('Failed to initialize GoogleGenerativeAI');
+    }
+
+    getConfiguredModelNames() {
+        const configuredModels = process.env.GEMINI_MODEL_PRIORITY || process.env.GEMINI_MODELS;
+
+        if (configuredModels) {
+            const parsedModels = configuredModels
+                .split(',')
+                .map(modelName => modelName.trim())
+                .filter(Boolean);
+
+            if (parsedModels.length > 0) {
+                return parsedModels;
+            }
+        }
+
+        return [
+            'gemini-2.5-flash',      // Primary - latest & fastest
+            'gemini-2.0-flash',      // Fallback - stable
+            'gemini-2.0-flash-lite'  // Last resort - lightweight
+        ];
     }
     
     /**
@@ -230,6 +245,20 @@ class GeminiService {
                errorMsg.includes('is not supported');
     }
 
+    isPermissionDeniedError(error) {
+        const errorMsg = error.message?.toLowerCase() || '';
+        const errorCode = error.code || error.status || '';
+
+        return errorCode === 403 ||
+               errorCode === 'PERMISSION_DENIED' ||
+               errorMsg.includes('403') ||
+               errorMsg.includes('forbidden') ||
+               errorMsg.includes('permission denied') ||
+               errorMsg.includes('access denied') ||
+               errorMsg.includes('project has been denied access') ||
+               errorMsg.includes('not authorized');
+    }
+
     /**
      * Execute with automatic fallback on rate limit or model not found
      * Now also switches API keys when all models for current key are exhausted
@@ -280,6 +309,24 @@ class GeminiService {
                         }
                         break; // Break inner loop, continue with new API key
                     }
+
+                    // If access is denied for the current model/project, try the next fallback model first.
+                    if (this.isPermissionDeniedError(error)) {
+                        console.log(`🚫 Access denied for API Key ${this.currentApiKeyIndex + 1}, model ${this.modelNames[this.currentModelIndex]}`);
+
+                        if (this.switchToFallback()) {
+                            continue;
+                        }
+
+                        console.log(`🔄 All models exhausted for API Key ${this.currentApiKeyIndex + 1}, switching API key...`);
+                        if (this.switchToNextApiKey()) {
+                            break;
+                        }
+
+                        this.currentModelIndex = startModelIndex;
+                        this.currentApiKeyIndex = startApiKeyIndex;
+                        throw new Error('GEMINI_ACCESS_DENIED: The configured Gemini API key does not have access to the available models. Check Gemini API access, project billing, and model availability.');
+                    }
                     
                     // If rate limit error, try next model first, then next API key
                     if (this.isRateLimitError(error)) {
@@ -321,6 +368,23 @@ class GeminiService {
         // All retries exhausted
         this.currentModelIndex = startModelIndex;
         this.currentApiKeyIndex = startApiKeyIndex;
+
+        if (lastError) {
+            if (this.isPermissionDeniedError(lastError)) {
+                throw new Error('GEMINI_ACCESS_DENIED: The configured Gemini API key does not have access to the available models. Check Gemini API access, project billing, and model availability.');
+            }
+
+            if (this.isRateLimitError(lastError)) {
+                const retryMatch = lastError.message?.match(/retry in (\d+)/i);
+                const retryTime = retryMatch ? retryMatch[1] : '60';
+                throw new Error(`RATE_LIMIT: All Gemini API keys quota exceeded. Please wait ${retryTime} seconds or try again later.`);
+            }
+
+            if (this.isModelNotFoundError(lastError)) {
+                throw new Error('AI_UNAVAILABLE: All Gemini models are currently unavailable.');
+            }
+        }
+
         throw lastError || new Error('Failed after all retry attempts');
     }
 

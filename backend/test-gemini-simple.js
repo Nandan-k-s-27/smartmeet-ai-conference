@@ -3,7 +3,10 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 async function testGemini() {
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-    const modelCandidates = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    const configuredModels = process.env.GEMINI_MODEL_PRIORITY || process.env.GEMINI_MODELS;
+    const modelNames = configuredModels
+        ? configuredModels.split(',').map(modelName => modelName.trim()).filter(Boolean)
+        : ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
     
     console.log('--- Gemini API Test ---');
     console.log(`API Key present: ${!!apiKey}`);
@@ -16,43 +19,36 @@ async function testGemini() {
         return;
     }
 
-    // Test 1: Constructor with string, then object fallback
-    console.log('\nTest 1: Client initialization');
-    let genAI = null;
-    let constructorUsed = null;
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    console.log(`Configured models: ${modelNames.join(', ')}`);
+
+    // Test the supported constructor and the configured model list.
+    console.log('\nTesting string constructor with configured models');
+    let modelSucceeded = false;
     try {
-        genAI = new GoogleGenerativeAI(apiKey);
-        constructorUsed = 'string';
+        for (const modelName of modelNames) {
+            try {
+                const model = genAI.getGenerativeModel({ model: modelName });
+                console.log(`Trying ${modelName}...`);
+                const result = await model.generateContent('Hello, are you working?');
+                console.log(`Response received from ${modelName}:`, result.response.text());
+                console.log(`✅ ${modelName} PASSED`);
+                modelSucceeded = true;
+                break;
+            } catch (error) {
+                console.error(`❌ ${modelName} FAILED:`, error.message);
+                if (error.code || error.status) {
+                    console.error(`   Code/Status: ${error.code || error.status}`);
+                }
+            }
+        }
+
+        if (!modelSucceeded) {
+            console.error('❌ No configured Gemini model succeeded with the current API key.');
+        }
     } catch (error) {
-        try {
-            genAI = new GoogleGenerativeAI({ apiKey });
-            constructorUsed = 'object';
-        } catch (fallbackError) {
-            console.error('❌ Test 1 FAILED:', fallbackError.message);
-            return;
-        }
-    }
-    console.log(`✅ Test 1 PASSED (constructor: ${constructorUsed})`);
-
-    // Test 2: Try multiple model names for maximum compatibility
-    console.log('\nTest 2: Model + prompt test');
-    let success = false;
-    for (const modelName of modelCandidates) {
-        try {
-            const model = genAI.getGenerativeModel({ model: modelName });
-            console.log(`Trying model: ${modelName}`);
-            const result = await model.generateContent('Hello, are you working?');
-            console.log('Response received:', result.response.text());
-            console.log(`✅ Test 2 PASSED with model: ${modelName}`);
-            success = true;
-            break;
-        } catch (error) {
-            console.error(`❌ Model ${modelName} failed: ${error.message}`);
-        }
-    }
-
-    if (!success) {
-        console.error('❌ Test 2 FAILED: No compatible model responded successfully.');
+        console.error('❌ Gemini test runner failed:', error.message);
     }
 }
 
