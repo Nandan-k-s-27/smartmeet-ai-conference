@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './Settings.css';
 
 const Settings = ({ isOpen, onClose, localStream, onSettingsChange }) => {
   const [activeTab, setActiveTab] = useState('audio');

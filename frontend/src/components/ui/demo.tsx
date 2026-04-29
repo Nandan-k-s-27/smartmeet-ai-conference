@@ -2,7 +2,7 @@
 'use client'
 
 import * as React from "react"
-import { ThemeSwitch } from "@/components/ui/theme-switch-button"
+import { ThemeSwitch } from "@/src/components/ui/theme-switch-button"
 
 export function ThemeSwitchDemo() {
   return (

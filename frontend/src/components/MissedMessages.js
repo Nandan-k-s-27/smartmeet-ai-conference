@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './MissedMessages.css';
 
 const MissedMessages = ({ 
   missedMessages, 

@@ -1,5 +1,6 @@
+'use client';
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import './App.css';
 
 import VideoCall from './components/VideoCall';
 import Chat from './components/Chat';
@@ -8,21 +9,13 @@ import ConfirmModal from './components/ConfirmModal';
 import MeetingSummary from './components/MeetingSummary';
 import MissedSpeech from './components/MissedSpeech';
 import { ThemeSwitch } from './components/ui/theme-switch-button';
+import { UserMenu } from './components/auth/UserMenu';
 
-// Production-ready backend URL configuration
-// Set REACT_APP_API_URL in .env or deployment platform
 const getBackendUrl = () => {
-  // Use environment variable if set (recommended for production)
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL.replace(/\/+$/, '');
-  }
-  
-  // Fallback: assume backend is on same host, port 5000
-  const { protocol, hostname } = window.location;
-  return `${protocol}//${hostname}:5000`;
+  return (process.env.NEXT_PUBLIC_API_PROXY_PATH || '/api/backend').replace(/\/+$/, '');
 };
 
-function App() {
+function App({ session }) {
   // Chat & Settings UI State
   const [showChat, setShowChat] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -36,7 +29,7 @@ function App() {
   const [meetingState, setMeetingState] = useState('lobby');
   const [meetingId, setMeetingId] = useState('');
   const [username, setUsername] = useState('');
-  const [userId, setUserId] = useState('');
+  const [userId, setUserId] = useState(() => session?.user?.id || '');
   const [isHost, setIsHost] = useState(false);
 
   // UI States
@@ -53,6 +46,10 @@ function App() {
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const videoCallCleanupRef = React.useRef(null);
+  const defaultDisplayName =
+    session?.user?.name ||
+    session?.user?.email?.split('@')[0] ||
+    '';
 
   // Missed Speech / Away Detection States
   const [showMissedSpeech, setShowMissedSpeech] = useState(false);
@@ -93,8 +90,13 @@ function App() {
     missedTranscriptsRef.current = [];
   }, [meetingState]);
 
-  // Generate unique user ID on mount
+  // Use the authenticated identity for API ownership and meeting host checks.
   useEffect(() => {
+    if (session?.user?.id) {
+      setUserId(session.user.id);
+      return;
+    }
+
     const storedUserId = localStorage.getItem('smartmeet_userId');
     if (storedUserId) {
       setUserId(storedUserId);
@@ -103,7 +105,7 @@ function App() {
       setUserId(newUserId);
       localStorage.setItem('smartmeet_userId', newUserId);
     }
-  }, []);
+  }, [session?.user?.id]);
 
   // Apply initial theme on mount
   useEffect(() => {
@@ -186,7 +188,7 @@ function App() {
   // Handle create meeting
   const openCreateModal = () => {
     setShowCreateModal(true);
-    setCreateUsername('');
+    setCreateUsername(defaultDisplayName);
   };
 
   const closeCreateModal = () => {
@@ -208,6 +210,7 @@ function App() {
       const meetingData = {
         host: userId,
         hostUsername: createUsername.trim(),
+        hostEmail: session?.user?.email || '',
         title: `${createUsername.trim()}'s Meeting`
       };
 
@@ -251,7 +254,7 @@ function App() {
   const openJoinModal = () => {
     setShowJoinModal(true);
     setJoinMeetingId('');
-    setJoinUsername('');
+    setJoinUsername(defaultDisplayName);
   };
 
   const closeJoinModal = () => {
@@ -436,8 +439,9 @@ function App() {
             <div className="stars-layer stars-medium"></div>
             <div className="stars-layer stars-large"></div>
           </div>
-          <div className="lobby-card">
-            <div className="lobby-theme-switch-wrap">
+            <div className="lobby-card">
+            <div className="lobby-topbar">
+              <UserMenu />
               <ThemeSwitch className="lobby-theme-switch" />
             </div>
             <div className="lobby-header">
@@ -663,6 +667,7 @@ function App() {
             </span>
           </div>
           <div className="meeting-controls">
+            <UserMenu compact />
             <ThemeSwitch className="workspace-theme-switch" />
             <button
               className="control-btn"

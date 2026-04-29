@@ -3,9 +3,18 @@ const MeetingModel = require('../models/Meeting');
 const User = require('../models/User');
 const meetingStore = require('../utils/meetingStore');
 
+const getAuthenticatedUserId = (req, fallbackUserId) => req.user?.id || fallbackUserId;
+
+const getDisplayName = (req, providedName) => {
+    const name = typeof providedName === 'string' ? providedName.trim() : '';
+    return name || req.user?.name || req.user?.email || 'SmartMeet User';
+};
+
 exports.createMeeting = async (req, res) => {
     try {
-        const { host, hostUsername, title } = req.body;
+        const { title } = req.body;
+        const host = getAuthenticatedUserId(req, req.body.host);
+        const hostUsername = getDisplayName(req, req.body.hostUsername);
 
         // Auto-generate meeting ID
         const meetingId = uuidv4().substring(0, 8).toUpperCase();
@@ -39,6 +48,8 @@ exports.createMeeting = async (req, res) => {
             {
                 userId: host,
                 username: hostUsername,
+                email: req.user?.email,
+                role: req.user?.role || 'user',
                 $push: { joinedMeetings: { meetingId: dbMeeting._id, joinedAt: new Date() } }
             },
             { upsert: true, new: true }
@@ -94,7 +105,8 @@ exports.getMeeting = async (req, res) => {
 exports.joinMeeting = async (req, res) => {
     try {
         const { meetingId } = req.params;
-        const { userId, username } = req.body;
+        const userId = getAuthenticatedUserId(req, req.body.userId);
+        const username = getDisplayName(req, req.body.username);
 
         const meeting = await meetingStore.getMeeting(meetingId);
         if (!meeting || !meeting.isActive) {
@@ -127,6 +139,8 @@ exports.joinMeeting = async (req, res) => {
             {
                 userId,
                 username,
+                email: req.user?.email,
+                role: req.user?.role || 'user',
                 $addToSet: { joinedMeetings: { meetingId: dbMeeting?._id, joinedAt: new Date() } }
             },
             { upsert: true, new: true }
@@ -159,7 +173,7 @@ exports.joinMeeting = async (req, res) => {
 exports.leaveMeeting = async (req, res) => {
     try {
         const { meetingId } = req.params;
-        const { userId } = req.body;
+        const userId = getAuthenticatedUserId(req, req.body.userId);
 
         const meeting = await meetingStore.getMeeting(meetingId);
         if (meeting) {
@@ -194,7 +208,7 @@ exports.leaveMeeting = async (req, res) => {
 exports.endMeeting = async (req, res) => {
     try {
         const { meetingId } = req.params;
-        const { userId } = req.body;
+        const userId = getAuthenticatedUserId(req, req.body.userId);
 
         const meeting = await meetingStore.getMeeting(meetingId);
         

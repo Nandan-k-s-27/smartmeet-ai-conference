@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './MeetingSummary.css';
 
 const MeetingSummary = ({ meetingId, isOpen, onClose, apiBase }) => {
   // Mode: 'summary' or 'chat'

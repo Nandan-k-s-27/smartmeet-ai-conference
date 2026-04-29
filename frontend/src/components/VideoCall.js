@@ -233,24 +233,43 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
     }
   }, [isFaceAway, faceDetected, isFaceDetecting]);
 
+  const getSocketUrl = () => {
+    if (process.env.NEXT_PUBLIC_SOCKET_URL) {
+      return process.env.NEXT_PUBLIC_SOCKET_URL.replace(/\/+$/, '');
+    }
+
+    if (process.env.NEXT_PUBLIC_BACKEND_URL) {
+      return process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/+$/, '');
+    }
+
+    const { protocol, hostname } = window.location;
+    return `${protocol}//${hostname}:5000`;
+  };
+
+  const getBackendBase = () => {
+    return (process.env.NEXT_PUBLIC_API_PROXY_PATH || '/api/backend').replace(/\/+$/, '');
+  };
+
+  const getBackendToken = async () => {
+    const response = await fetch('/api/auth/backend-token', { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error('Unable to create backend auth token');
+    }
+    const data = await response.json();
+    return data.token;
+  };
+
   const initializeConnection = async () => {
     try {
       setConnectionStatus('connecting');
       await loadRtcConfiguration();
       await initializeMedia();
-      
-      // Production-ready socket URL configuration
-      const getSocketUrl = () => {
-        if (process.env.REACT_APP_SOCKET_URL) {
-          return process.env.REACT_APP_SOCKET_URL;
-        }
-        const { protocol, hostname } = window.location;
-        return `${protocol}//${hostname}:5000`;
-      };
-      
+
       const socketBase = getSocketUrl();
+      const backendToken = await getBackendToken();
 
       socketRef.current = io(socketBase, {
+        auth: { token: backendToken },
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
@@ -277,14 +296,6 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
   };
 
   const loadRtcConfiguration = async () => {
-    const getBackendBase = () => {
-      if (process.env.REACT_APP_API_URL) {
-        return process.env.REACT_APP_API_URL.replace(/\/+$/, '');
-      }
-      const { protocol, hostname } = window.location;
-      return `${protocol}//${hostname}:5000`;
-    };
-
     try {
       const baseUrl = getBackendBase();
       const response = await fetch(

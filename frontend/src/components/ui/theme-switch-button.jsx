@@ -1,6 +1,5 @@
 import React from 'react';
 import { Moon, Sun } from 'lucide-react';
-import './theme-switch-button.css';
 
 export function ThemeSwitch({ className = '' }) {
   const [theme, setTheme] = React.useState('light');

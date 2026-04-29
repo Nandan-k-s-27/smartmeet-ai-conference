@@ -612,7 +612,7 @@ body.light-mode .stars-large {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 28px;
-  padding: 50px 40px;
+  padding: 76px 40px 50px;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
   max-width: 650px;
   width: 100%;
@@ -629,6 +629,17 @@ body.light-mode .stars-large {
 
 .lobby-theme-switch {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
+.lobby-topbar {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  left: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 @keyframes slideUp {
@@ -3877,6 +3888,181 @@ body.light-mode .presence-toast-close:hover {
 .btn-secondary:active,
 .control-btn:active {
   transform: translateY(0) scale(0.98);
+}
+
+/* ==================== AUTH ==================== */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.auth-panel {
+  width: min(100%, 440px);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 24px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18);
+  padding: 36px;
+  text-align: center;
+}
+
+.auth-brand i {
+  font-size: 3rem;
+  color: #4facfe;
+  margin-bottom: 16px;
+}
+
+.auth-brand h1 {
+  color: #111827;
+  font-size: 2.4rem;
+  margin-bottom: 10px;
+}
+
+.auth-brand p {
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.auth-google-button,
+.auth-link {
+  width: 100%;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.auth-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+
+.auth-user-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(79, 172, 254, 0.18);
+  border-radius: 14px;
+  padding: 5px 6px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+.auth-user-menu.compact {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.auth-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.auth-user-avatar.fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.auth-user-copy {
+  display: flex;
+  min-width: 0;
+  max-width: 190px;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.auth-user-copy span,
+.auth-user-copy small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-user-copy span {
+  color: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.auth-user-copy small {
+  color: #64748b;
+  font-size: 0.72rem;
+  text-transform: capitalize;
+}
+
+.auth-signout-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(79, 172, 254, 0.12);
+  color: #0369a1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-signout-button:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+body.dark-mode .auth-panel {
+  background: rgba(30, 30, 46, 0.96);
+  border-color: rgba(79, 172, 254, 0.14);
+}
+
+body.dark-mode .auth-brand h1,
+body.dark-mode .auth-user-menu {
+  color: #f8fafc;
+}
+
+body.dark-mode .auth-brand p,
+body.dark-mode .auth-user-copy small {
+  color: #94a3b8;
+}
+
+body.dark-mode .auth-user-menu {
+  background: rgba(30, 30, 46, 0.92);
+}
+
+@media (max-width: 720px) {
+  .lobby-topbar {
+    position: static;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .auth-user-copy {
+    max-width: 130px;
+  }
+
+  .meeting-controls .auth-user-menu.compact {
+    display: none;
+  }
 }
 
 /* ==================== SCROLLBAR STYLING ==================== */

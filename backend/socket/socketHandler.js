@@ -7,11 +7,20 @@ module.exports = (io) => {
     io.on('connection', (socket) => {
         console.log('🔌 New client connected:', socket.id);
 
+        const getSocketIdentity = (data = {}) => ({
+            userId: socket.user?.id || data.userId,
+            username: (typeof data.username === 'string' && data.username.trim())
+                || socket.user?.name
+                || socket.user?.email
+                || 'SmartMeet User'
+        });
+
         // --- Meeting Management ---
 
         socket.on('join-meeting', async (data) => {
             try {
-                const { meetingId, userId, username } = data;
+                const { meetingId } = data;
+                const { userId, username } = getSocketIdentity(data);
 
                 console.log('🚀 JOIN-MEETING:', username, 'joining', meetingId);
 
@@ -86,7 +95,8 @@ module.exports = (io) => {
         });
 
         socket.on('leave-meeting', async (data) => {
-            const { meetingId, userId } = data;
+            const { meetingId } = data;
+            const { userId } = getSocketIdentity(data);
             console.log('👋 LEAVE-MEETING:', userId, 'leaving', meetingId);
 
             const meeting = await meetingStore.getMeeting(meetingId);
@@ -159,9 +169,10 @@ module.exports = (io) => {
 
         socket.on('chat-message', async (data) => {
             // data: { meetingId, userId, username, message, timestamp }
+            const { userId, username } = getSocketIdentity(data);
             const meeting = await meetingStore.getMeeting(data.meetingId);
             if (meeting) {
-                const msg = { ...data, id: Date.now() + Math.random(), type: 'text' };
+                const msg = { ...data, userId, username, id: Date.now() + Math.random(), type: 'text' };
                 meeting.addMessage(msg);
                 io.to(data.meetingId).emit('chat-message', msg);
             }
@@ -176,15 +187,17 @@ module.exports = (io) => {
         });
 
         socket.on('file-share', async (data) => {
+            const { userId, username } = getSocketIdentity(data);
             const meeting = await meetingStore.getMeeting(data.meetingId);
             if (meeting) {
-                const fileMsg = { ...data, id: Date.now() + Math.random(), type: 'file' };
+                const fileMsg = { ...data, userId, username, id: Date.now() + Math.random(), type: 'file' };
                 meeting.addMessage(fileMsg);
                 io.to(data.meetingId).emit('file-shared', fileMsg);
             }
         });
 
         socket.on('create-poll', async (data) => {
+            const { userId, username } = getSocketIdentity(data);
             const meeting = await meetingStore.getMeeting(data.meetingId);
             if (meeting) {
                 // Format options as objects with votes array for consistency
@@ -197,6 +210,8 @@ module.exports = (io) => {
                 
                 const pollMsg = { 
                     ...data, 
+                    userId,
+                    username,
                     options: formattedOptions,
                     type: 'poll' 
                 };
@@ -208,6 +223,7 @@ module.exports = (io) => {
 
         socket.on('vote-poll', async (data) => {
             // data: { meetingId, pollId, userId, username, optionIndex }
+            const { userId } = getSocketIdentity(data);
             const meeting = await meetingStore.getMeeting(data.meetingId);
             if (meeting) {
                 // Update the poll in chat history
@@ -219,9 +235,9 @@ module.exports = (io) => {
                     
                     // Remove user's vote from all options, then add to selected
                     poll.options = poll.options.map((opt, idx) => {
-                        const votes = (opt.votes || []).filter(v => v !== data.userId);
+                        const votes = (opt.votes || []).filter(v => v !== userId);
                         if (idx === data.optionIndex) {
-                            votes.push(data.userId);
+                            votes.push(userId);
                         }
                         return { ...opt, votes, count: votes.length };
                     });
@@ -244,13 +260,14 @@ module.exports = (io) => {
         
         socket.on('transcript', async (data) => {
             // data: { meetingId, userId, username, text, isFinal }
+            const { userId, username } = getSocketIdentity(data);
             const meeting = await meetingStore.getMeeting(data.meetingId);
             if (meeting && data.text && data.text.trim()) {
-                meeting.addTranscript(data.userId, data.username, data.text, data.isFinal);
+                meeting.addTranscript(userId, username, data.text, data.isFinal);
                 // Broadcast to other participants for live captions
                 socket.to(data.meetingId).emit('transcript-update', {
-                    userId: data.userId,
-                    username: data.username,
+                    userId,
+                    username,
                     text: data.text,
                     isFinal: data.isFinal,
                     timestamp: new Date().toISOString()
@@ -261,9 +278,10 @@ module.exports = (io) => {
         // Handle transcription status updates (when user starts/stops transcribing)
         socket.on('transcription-status', (data) => {
             // data: { meetingId, userId, username, isTranscribing }
+            const { userId, username } = getSocketIdentity(data);
             socket.to(data.meetingId).emit('transcription-status-update', {
-                userId: data.userId,
-                username: data.username,
+                userId,
+                username,
                 isTranscribing: data.isTranscribing
             });
             console.log(`🎤 ${data.username} ${data.isTranscribing ? 'started' : 'stopped'} transcription`);
@@ -283,34 +301,38 @@ module.exports = (io) => {
         // --- User State Updates ---
 
         socket.on('toggle-audio', async (data) => {
+            const { userId } = getSocketIdentity(data);
             const meeting = await meetingStore.getMeeting(data.meetingId);
             if (meeting) {
-                meeting.updateParticipant(data.userId, { isAudioMuted: data.isAudioMuted });
-                socket.to(data.meetingId).emit('audio-toggled', data);
+                meeting.updateParticipant(userId, { isAudioMuted: data.isAudioMuted });
+                socket.to(data.meetingId).emit('audio-toggled', { ...data, userId });
             }
         });
 
         socket.on('toggle-video', async (data) => {
+            const { userId } = getSocketIdentity(data);
             const meeting = await meetingStore.getMeeting(data.meetingId);
             if (meeting) {
-                meeting.updateParticipant(data.userId, { isVideoOff: data.isVideoOff });
-                socket.to(data.meetingId).emit('video-toggled', data);
+                meeting.updateParticipant(userId, { isVideoOff: data.isVideoOff });
+                socket.to(data.meetingId).emit('video-toggled', { ...data, userId });
             }
         });
 
         socket.on('raise-hand', async (data) => {
+            const { userId } = getSocketIdentity(data);
             const meeting = await meetingStore.getMeeting(data.meetingId);
             if (meeting) {
-                meeting.updateParticipant(data.userId, { isHandRaised: data.isHandRaised });
-                socket.to(data.meetingId).emit('hand-raised', data);
+                meeting.updateParticipant(userId, { isHandRaised: data.isHandRaised });
+                socket.to(data.meetingId).emit('hand-raised', { ...data, userId });
             }
         });
 
         socket.on('screen-share', async (data) => {
+            const { userId } = getSocketIdentity(data);
             const meeting = await meetingStore.getMeeting(data.meetingId);
             if (meeting) {
-                meeting.updateParticipant(data.userId, { isScreenSharing: data.isScreenSharing });
-                socket.to(data.meetingId).emit('screen-share-update', data);
+                meeting.updateParticipant(userId, { isScreenSharing: data.isScreenSharing });
+                socket.to(data.meetingId).emit('screen-share-update', { ...data, userId });
             }
         });
 
@@ -318,7 +340,8 @@ module.exports = (io) => {
 
         // Host mutes a participant
         socket.on('host-mute-participant', async (data) => {
-            const { meetingId, hostUserId, targetUserId, targetSocketId } = data;
+            const { meetingId, targetUserId, targetSocketId } = data;
+            const hostUserId = socket.user?.id;
             console.log(`🔇 Host mute request:`, { meetingId, hostUserId, targetUserId, targetSocketId });
             
             const meeting = await meetingStore.getMeeting(meetingId);
@@ -354,7 +377,8 @@ module.exports = (io) => {
 
         // Host removes a participant from the meeting
         socket.on('host-kick-participant', async (data) => {
-            const { meetingId, hostUserId, targetUserId, targetSocketId, targetUsername } = data;
+            const { meetingId, targetUserId, targetSocketId, targetUsername } = data;
+            const hostUserId = socket.user?.id;
             console.log(`🚫 Host kick request:`, { meetingId, hostUserId, targetUserId, targetSocketId });
             
             const meeting = await meetingStore.getMeeting(meetingId);

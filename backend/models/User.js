@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     sparse: true,
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
   joinedMeetings: [{
     meetingId: {
       type: mongoose.Schema.Types.ObjectId,

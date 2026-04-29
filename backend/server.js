@@ -9,6 +9,7 @@ const connectDB = require('./config/db');
 const meetingController = require('./controllers/meetingController');
 const summaryController = require('./controllers/summaryController');
 const socketHandler = require('./socket/socketHandler');
+const { authenticateRequest, authenticateSocket } = require('./middleware/authMiddleware');
 
 const app = express();
 const server = http.createServer(app);
@@ -56,7 +57,8 @@ const corsOptions = {
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 };
 
 const io = socketIo(server, {
@@ -132,17 +134,18 @@ if (!isProduction) {
 }
 
 // Initialize Socket Handler
+io.use(authenticateSocket);
 socketHandler(io);
 
 // API Routes
-app.post('/api/meetings/create', meetingController.createMeeting);
-app.get('/api/meetings/:meetingId', meetingController.getMeeting);
-app.post('/api/meetings/:meetingId/join', meetingController.joinMeeting);
-app.post('/api/meetings/:meetingId/leave', meetingController.leaveMeeting);
-app.post('/api/meetings/:meetingId/end', meetingController.endMeeting);
+app.post('/api/meetings/create', authenticateRequest, meetingController.createMeeting);
+app.get('/api/meetings/:meetingId', authenticateRequest, meetingController.getMeeting);
+app.post('/api/meetings/:meetingId/join', authenticateRequest, meetingController.joinMeeting);
+app.post('/api/meetings/:meetingId/leave', authenticateRequest, meetingController.leaveMeeting);
+app.post('/api/meetings/:meetingId/end', authenticateRequest, meetingController.endMeeting);
 
 // WebRTC ICE/TURN config endpoint
-app.get('/api/webrtc/ice-config', (req, res) => {
+app.get('/api/webrtc/ice-config', authenticateRequest, (req, res) => {
   try {
     const rtcConfiguration = getRtcConfiguration();
     res.json({
@@ -159,12 +162,12 @@ app.get('/api/webrtc/ice-config', (req, res) => {
 });
 
 // Summary Routes (Gemini AI)
-app.post('/api/summary/generate', summaryController.generateSummary);
-app.post('/api/summary/chat', summaryController.chatWithAI);
-app.post('/api/summary/missed-messages', summaryController.summarizeMissedMessages);
-app.post('/api/summary/missed-speech', summaryController.summarizeMissedSpeech);
+app.post('/api/summary/generate', authenticateRequest, summaryController.generateSummary);
+app.post('/api/summary/chat', authenticateRequest, summaryController.chatWithAI);
+app.post('/api/summary/missed-messages', authenticateRequest, summaryController.summarizeMissedMessages);
+app.post('/api/summary/missed-speech', authenticateRequest, summaryController.summarizeMissedSpeech);
 app.get('/api/summary/status', summaryController.checkStatus);
-app.get('/api/summary/meeting-data/:meetingId', summaryController.getMeetingData);
+app.get('/api/summary/meeting-data/:meetingId', authenticateRequest, summaryController.getMeetingData);
 
 // Health Check endpoint
 app.get('/', (req, res) => {

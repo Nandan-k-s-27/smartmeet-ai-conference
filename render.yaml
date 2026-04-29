@@ -22,4 +22,8 @@ services:
         sync: false  # User must provide this
       - key: ALLOWED_ORIGINS
         sync: false  # User must provide this (e.g., https://your-frontend.vercel.app)
+      - key: BACKEND_JWT_SECRET
+        sync: false  # Must match the frontend BACKEND_JWT_SECRET
+      - key: AUTH_SECRET
+        sync: false  # Optional fallback if BACKEND_JWT_SECRET is not set
     autoDeploy: true

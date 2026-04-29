@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './MissedSpeech.css';
 
 const MissedSpeech = ({ 
   transcripts, 

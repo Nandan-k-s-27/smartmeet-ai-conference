@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './Chat.css';
 
 const Chat = ({ socket, meetingId, userId, username, isOpen, onClose }) => {
   const [messages, setMessages] = useState([]);
