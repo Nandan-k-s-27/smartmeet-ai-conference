@@ -45,7 +45,7 @@ export const authConfig = {
         session.user.email = token.email || session.user.email;
         session.user.name = token.name || session.user.name;
         session.user.image = (token.picture as string | undefined) || session.user.image;
-        session.user.role = token.role || "user";
+        session.user.role = (token.role as "user" | "admin" | undefined) || "user";
       }
 
       return session;

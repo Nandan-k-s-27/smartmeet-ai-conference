@@ -38,11 +38,17 @@ const useFaceDetection = ({
   const noPresenceCountRef = useRef(0);
   const presenceCountRef = useRef(0);
 
+  const debugLog = useCallback((...args) => {
+    if (debugMode || process.env.NODE_ENV !== 'production') {
+      console.log(...args);
+    }
+  }, [debugMode]);
+
   // Initialize MediaPipe Face Detector
   useEffect(() => {
     const initializeDetector = async () => {
       try {
-        console.log('🚀 Initializing MediaPipe Face Detector...');
+        debugLog('🚀 Initializing MediaPipe Face Detector...');
         const vision = await FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
         );
@@ -55,7 +61,7 @@ const useFaceDetection = ({
         });
         faceDetectorRef.current = detector;
         setIsModelLoaded(true);
-        console.log('✅ MediaPipe Face Detector ready');
+        debugLog('✅ MediaPipe Face Detector ready');
       } catch (error) {
         console.error('❌ Failed to initialize MediaPipe Face Detector:', error);
       }
@@ -98,7 +104,7 @@ const useFaceDetection = ({
       };
 
       if (debugMode) {
-        console.log(`🔍 MediaPipe: Faces=${detections.length}, Conf=${confidence}%`);
+        debugLog(`🔍 MediaPipe: Faces=${detections.length}, Conf=${confidence}%`);
       }
 
       return { isPresent, metrics };
@@ -132,14 +138,14 @@ const useFaceDetection = ({
           ? Math.round((now - awayStartTimeRef.current) / 1000) 
           : 0;
         
-        console.log(`👤 User returned! Away for ${awayDuration}s`);
-        console.log(`🔔 About to call onReturn callback - onReturn is:`, typeof onReturn);
+        debugLog(`👤 User returned! Away for ${awayDuration}s`);
+        debugLog(`🔔 About to call onReturn callback - onReturn is:`, typeof onReturn);
         
         isAwayRef.current = false;
         setIsAway(false);
         
         if (onReturn) {
-          console.log(`✅ Calling onReturn({ awayDuration: ${awayDuration} })`);
+          debugLog(`✅ Calling onReturn({ awayDuration: ${awayDuration} })`);
           onReturn({
             awayDuration,
             awayStartTime: awayStartTimeRef.current,
@@ -160,7 +166,7 @@ const useFaceDetection = ({
       const consecutiveRequired = Math.max(2, Math.ceil(awayThreshold / detectionInterval));
       
       if (noPresenceCountRef.current >= consecutiveRequired && !isAwayRef.current) {
-        console.log(`👻 User is AWAY (no face detected)`);
+        debugLog(`👻 User is AWAY (no face detected)`);
         isAwayRef.current = true;
         awayStartTimeRef.current = Date.now();
         setIsAway(true);
@@ -184,7 +190,7 @@ const useFaceDetection = ({
     }
 
     setIsDetecting(true);
-    console.log('🎥 Starting MediaPipe presence detection loop');
+    debugLog('🎥 Starting MediaPipe presence detection loop');
     
     detectionLoopRef.current = setInterval(async () => {
       const result = await detectPresence();
@@ -202,7 +208,7 @@ const useFaceDetection = ({
   // Manual controls for testing
   const setUserAway = useCallback(() => {
     if (!isAwayRef.current) {
-      console.log('👻 User manually set as AWAY');
+      debugLog('👻 User manually set as AWAY');
       isAwayRef.current = true;
       awayStartTimeRef.current = Date.now();
       setIsAway(true);
@@ -217,7 +223,7 @@ const useFaceDetection = ({
       const awayDuration = awayStartTimeRef.current 
         ? Math.round((Date.now() - awayStartTimeRef.current) / 1000) 
         : 0;
-      console.log(`👤 User manually set as PRESENT`);
+      debugLog(`👤 User manually set as PRESENT`);
       isAwayRef.current = false;
       setIsAway(false);
       setFaceDetected(true);
@@ -230,7 +236,7 @@ const useFaceDetection = ({
 
   const resetBaseline = useCallback(() => {
     // No-op for MediaPipe, but kept for API compatibility
-    console.log('🔄 Resetting baseline (No-op for MediaPipe)');
+    debugLog('🔄 Resetting baseline (No-op for MediaPipe)');
   }, []);
 
   return {

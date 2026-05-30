@@ -3,14 +3,6 @@ import io from 'socket.io-client';
 import useFaceDetection from '../hooks/useFaceDetection';
 
 const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, onStreamChange, appliedSettings, onCleanup, onUserAway, onUserReturn }) => {
-  // Debug: Log props on mount
-  useEffect(() => {
-    console.log('🎬 VideoCall mounted with callbacks:', {
-      hasOnUserAway: typeof onUserAway,
-      hasOnUserReturn: typeof onUserReturn
-    });
-  }, []);
-
   // Media States
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState(new Map());
@@ -92,7 +84,6 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
 
   // Initialize connection
   useEffect(() => {
-    let isMounted = true;
     const start = async () => {
       await initializeConnection();
     };
@@ -104,7 +95,6 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
     }
 
     return () => {
-      isMounted = false;
       cleanup();
     };
   }, [meetingId, username, userId]);
@@ -1398,20 +1388,18 @@ const VideoCall = ({ meetingId, username, userId, isHost, onError, setSocket, on
     }
   }, []);
 
-  const toggleLayoutMenu = useCallback(() => {
-    setShowLayoutMenu(prev => !prev);
-  }, []);
-
-  // Get layout display info
   const getLayoutInfo = useCallback(() => {
     switch (layoutMode) {
-      case 'grid': return { icon: 'th', label: 'Grid View' };
       case 'speaker': return { icon: 'user-tie', label: 'Speaker View' };
       case 'pin': return { icon: 'thumbtack', label: 'Pin View' };
       case 'stage': return { icon: 'desktop', label: 'Stage View' };
       default: return { icon: 'th', label: 'Grid View' };
     }
   }, [layoutMode]);
+
+  const toggleLayoutMenu = useCallback(() => {
+    setShowLayoutMenu((prev) => !prev);
+  }, []);
 
   // Toggle fullscreen for a video
   const toggleFullscreen = useCallback((userId) => {

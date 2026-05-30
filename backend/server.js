@@ -17,6 +17,17 @@ const server = http.createServer(app);
 // Environment
 const isProduction = process.env.NODE_ENV === 'production';
 
+const getFirstDefinedEnv = (...keys) => {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return '';
+};
+
 // Connect to MongoDB
 connectDB();
 
@@ -84,14 +95,14 @@ const getRtcConfiguration = () => {
     iceTransportPolicy: 'all'
   };
 
-  const turnUrlsRaw =
-    process.env.METERED_TURN_URLS ||
-    process.env.METERED_TURN_URL ||
-    process.env.TURN_URLS ||
-    process.env.TURN_URL ||
-    '';
-  const turnUsername = process.env.METERED_TURN_USERNAME || process.env.TURN_USERNAME || '';
-  const turnCredential = process.env.METERED_TURN_CREDENTIAL || process.env.TURN_CREDENTIAL || '';
+  const turnUrlsRaw = getFirstDefinedEnv(
+    'METERED_TURN_URLS',
+    'METERED_TURN_URL',
+    'TURN_URLS',
+    'TURN_URL'
+  );
+  const turnUsername = getFirstDefinedEnv('METERED_TURN_USERNAME', 'TURN_USERNAME');
+  const turnCredential = getFirstDefinedEnv('METERED_TURN_CREDENTIAL', 'TURN_CREDENTIAL');
 
   const defaultMeteredUrls = [
     'turn:global.relay.metered.ca:80',

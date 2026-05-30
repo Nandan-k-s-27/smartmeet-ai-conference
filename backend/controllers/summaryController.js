@@ -1,6 +1,33 @@
 const geminiService = require('../services/geminiService');
 const meetingStore = require('../utils/meetingStore');
 
+function getErrorMessage(error, fallbackMessage) {
+    return error instanceof Error && error.message ? error.message : fallbackMessage;
+}
+
+function getMissedSummaryErrorResponse(error, fallbackMessage) {
+    if (error instanceof Error && error.message) {
+        if (error.message.includes('RATE_LIMIT')) {
+            return {
+                statusCode: 429,
+                message: 'AI service is temporarily busy (quota exceeded). Please wait a moment and try again.'
+            };
+        }
+
+        if (error.message.includes('AI_UNAVAILABLE')) {
+            return {
+                statusCode: 503,
+                message: 'AI service is temporarily unavailable. Please try again later.'
+            };
+        }
+    }
+
+    return {
+        statusCode: 500,
+        message: fallbackMessage
+    };
+}
+
 /**
  * Generate meeting summary
  * POST /api/summary/generate
@@ -74,7 +101,7 @@ exports.generateSummary = async (req, res) => {
         console.error('❌ Error generating summary:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to generate summary'
+            message: getErrorMessage(error, 'Failed to generate summary')
         });
     }
 };
@@ -144,7 +171,7 @@ exports.chatWithAI = async (req, res) => {
         console.error('❌ Error in AI chat:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to get AI response'
+            message: getErrorMessage(error, 'Failed to get AI response')
         });
     }
 };
@@ -275,7 +302,7 @@ exports.summarizeMissedMessages = async (req, res) => {
         console.error('❌ Error summarizing missed messages:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to summarize missed messages'
+            message: getErrorMessage(error, 'Failed to summarize missed messages')
         });
     }
 };
@@ -323,19 +350,8 @@ exports.summarizeMissedSpeech = async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error summarizing missed speech:', error);
-        
-        // Provide more helpful error messages based on error type
-        let statusCode = 500;
-        let message = error.message || 'Failed to summarize missed speech';
-        
-        if (error.message?.includes('RATE_LIMIT')) {
-            statusCode = 429; // Too Many Requests
-            message = 'AI service is temporarily busy (quota exceeded). Please wait a moment and try again.';
-        } else if (error.message?.includes('AI_UNAVAILABLE')) {
-            statusCode = 503; // Service Unavailable
-            message = 'AI service is temporarily unavailable. Please try again later.';
-        }
-        
+        const { statusCode, message } = getMissedSummaryErrorResponse(error, 'Failed to summarize missed speech');
+
         res.status(statusCode).json({
             success: false,
             message: message
